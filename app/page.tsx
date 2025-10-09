@@ -203,7 +203,7 @@ const MediaContainer: React.FC<MediaContainerProps> = ({ mediaState, isConnected
 
     return (
         <div className="p-4">
-            <div className={`rounded-xl aspect-square w-full mx-auto transition-all duration-500 bg-gray-900/80 dark:bg-gray-100/90 shadow-xl overflow-hidden relative`}>
+            <div className={`rounded-xl aspect-square w-full mx-auto transition-all duration-500 bg-gray-100/90 dark:bg-gray-900/80 shadow-xl overflow-hidden relative`}>
                 {/* Image (always present, opacity controlled) */}
                 <img 
                     src={CARD_IMAGE} 
@@ -262,7 +262,7 @@ const NotificationToast: React.FC<NotificationToastProps> = React.memo(({ addres
             initial={{ opacity: 0, y: '100%' }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? '0%' : '100%' }}
             transition={{ duration: 0.3 }}
-            className="bg-gray-900/40 backdrop-blur-md p-3 rounded-xl shadow-2xl pointer-events-auto w-full mb-3 max-w-xs text-white transition-opacity"
+            className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md p-3 rounded-xl shadow-2xl pointer-events-auto w-full mb-3 max-w-xs text-gray-900 dark:text-white transition-all duration-300"
             style={{ 
                 border: `1px solid ${primaryAccent}`, 
             }} 
@@ -273,14 +273,14 @@ const NotificationToast: React.FC<NotificationToastProps> = React.memo(({ addres
                     <p className="text-sm font-semibold truncate">
                          Claimed!
                     </p>
-                    <p className="text-xs text-gray-200 truncate">
+                    <p className="text-xs text-gray-600 dark:text-gray-200 truncate">
                         {address} received 
                         <span className="font-bold ml-1" style={{ color: primaryAccent }}>{amount} $XPRT</span>
                     </p>
                 </div>
                 <button 
                     onClick={handleClose} 
-                    className="text-gray-400 hover:text-gray-100 transition-colors flex-shrink-0"
+                    className="text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-100 transition-colors flex-shrink-0"
                 >
                     <Icon name="xCircle" className="w-3 h-3" color="currentColor" />
                 </button>
@@ -307,7 +307,7 @@ const UpcomingCard: React.FC<UpcomingCardProps> = ({ iconName, iconColor, title,
             boxShadow: '0 15px 30px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.3)', 
             transition: { duration: 0.2 }
         }}
-        className="p-5 rounded-xl shadow-lg border transition-all dark:bg-neutral-900 dark:border-neutral-800 bg-white border-gray-200"
+        className="p-5 rounded-xl border transition-all bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 shadow-[0_4px_20px_rgb(0,0,0,0.08)] dark:shadow-lg"
     >
         <div className="flex items-center space-x-3 mb-3">
             <div className='p-2 rounded-full dark:bg-neutral-800 bg-gray-100'>
@@ -407,15 +407,32 @@ function ConnectionReporter() {
         }
     };
 
-    const disconnectWallet = (): void => {
-        disconnect();
-        setIsEligible(null);
-        setEligibilityChecked(false);
-        setEligibleTokens([]);
-        setIsClaimed(false);
-        setIsLoading(false);
-        setMessage(null); // Clear any existing messages immediately
-        showMessage('Wallet disconnected.', 'info');
+    const disconnectWallet = async (): Promise<void> => {
+        try {
+            console.log('[Disconnect] Disconnecting wallet...');
+            
+            // Use both disconnect methods to ensure proper disconnection
+            disconnect();
+            
+            // Reset all state immediately
+            setIsEligible(null);
+            setEligibilityChecked(false);
+            setEligibleTokens([]);
+            setIsClaimed(false);
+            setIsLoading(false);
+            setMessage(null);
+            
+            console.log('[Disconnect] Wallet disconnected successfully');
+        } catch (err) {
+            console.error('[Disconnect] Error:', err);
+            // Still reset state even if disconnect fails
+            setIsEligible(null);
+            setEligibilityChecked(false);
+            setEligibleTokens([]);
+            setIsClaimed(false);
+            setIsLoading(false);
+            setMessage(null);
+        }
     };
 
     // Check eligibility ONCE on wallet connect
@@ -811,24 +828,24 @@ function ConnectionReporter() {
 
         if (isClaimed) {
             return {
-                icon: (<Icon name="checkCircle" className="w-7 h-7 mx-auto text-green-600 mb-2" />),
+                icon: (<Icon name="checkCircle" className="w-7 h-7 mx-auto text-green-600 dark:text-green-500 mb-2" />),
                 title: (<p className="text-xl font-bold text-green-600 dark:text-green-500">CLAIMED!</p>),
-                subtitle: (<p className="text-sm text-gray-500 dark:text-gray-400 mt-1">You have successfully claimed your {airdropAmount}.</p>)
+                subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">You have successfully claimed your {airdropAmount}.</p>)
             };
         }
         if (isEligible) {
             return {
                 icon: (<Icon name="rocket" className="w-7 h-7 mx-auto" color={primaryAccent} />),
                 title: (<p className="text-xl font-bold" style={{ color: primaryAccent }}>YOU ARE ELIGIBLE!</p>),
-                subtitle: (<p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Amount: <span className="font-semibold">{airdropAmount} XPRT</span></p>)
+                subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Amount: <span className="font-semibold">{airdropAmount} XPRT</span></p>)
             };
         }
         
         // Only show "NOT ELIGIBLE" after check is complete
         return {
-            icon: (<Icon name="xCircle" className="w-7 h-7 mx-auto text-red-600 mb-2" />),
-            title: (<p className="text-xl font-bold text-red-600">NOT ELIGIBLE</p>),
-            subtitle: (<p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Check the official criteria on our docs page.</p>)
+            icon: (<Icon name="xCircle" className="w-7 h-7 mx-auto text-red-600 dark:text-red-500 mb-2" />),
+            title: (<p className="text-xl font-bold text-red-600 dark:text-red-500">NOT ELIGIBLE</p>),
+            subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Check the official criteria on our docs page.</p>)
         };
     };
 
@@ -937,7 +954,7 @@ function ConnectionReporter() {
             <GeometricBackground theme={theme} />
             <ConnectionReporter />
             
-            <header className="fixed top-0 left-0 w-full z-30 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm shadow-xl border-b border-gray-200 dark:border-neutral-800 transition-colors duration-500">
+            <header className="fixed top-0 left-0 w-full z-30 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm shadow-lg border-b border-gray-200 dark:border-neutral-800 transition-colors duration-500">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
                     <div className="flex items-center space-x-2">
                         <Icon name="gem" className="w-6 h-6" color={primaryAccent} />
@@ -946,11 +963,11 @@ function ConnectionReporter() {
 
                     <div className="flex items-center space-x-3">
                         <button onClick={toggleTheme} className="p-2 rounded-full transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Toggle theme">
-                            <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                            <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         </button>
                         
                         <motion.button 
-                            onClick={isConnected ? disconnectWallet : connectWallet}
+                            onClick={() => isConnected ? disconnectWallet() : connectWallet()}
                             whileHover={{ scale: 1.05, boxShadow: '0 5px 10px rgba(0, 0, 0, 0.3)' }}
                             whileTap={{ scale: 0.95 }}
                             className={`font-semibold py-2 px-4 rounded-full shadow-md transition-all duration-300 transform flex items-center space-x-2 text-sm
@@ -982,10 +999,10 @@ function ConnectionReporter() {
                                 boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 10px 20px rgba(59, 130, 246, 0.3)', 
                                 transition: { duration: 0.3 } 
                             }}
-                            className={`rounded-xl shadow-2xl border transition-all duration-500 ${
+                            className={`rounded-xl border transition-all duration-500 ${
                                 theme === 'dark' 
-                                    ? 'bg-neutral-900 border-neutral-800 animate-accent-pulse' 
-                                    : 'bg-white border-gray-200'
+                                    ? 'bg-neutral-900 border-neutral-800 shadow-2xl animate-accent-pulse' 
+                                    : 'bg-white border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)]'
                             }`}
                         > 
                             
@@ -997,10 +1014,10 @@ function ConnectionReporter() {
                             
                             <div className="px-5 pb-5 pt-4"> 
                                 <h1 className="text-2xl font-extrabold mb-1 text-center" style={{ color: primaryAccent }}>X-Genesis Airdrop</h1>
-                                <p className="text-center text-gray-500 dark:text-gray-400 mb-6 text-sm">Secure your $XPRT tokens now! Connect your wallet to check eligibility.</p>
+                                <p className="text-center text-gray-600 dark:text-gray-400 mb-6 text-sm">Secure your $XPRT tokens now! Connect your wallet to check eligibility.</p>
 
                                 {statusContent && (
-                                    <div className="text-center mb-6 p-4 rounded-lg border border-dashed dark:border-gray-600 bg-gray-50 dark:bg-gray-800/80 transition-colors duration-500">
+                                    <div className="text-center mb-6 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/80 transition-colors duration-500">
                                         {statusContent.icon}
                                         {statusContent.title}
                                         {statusContent.subtitle}
@@ -1036,7 +1053,9 @@ function ConnectionReporter() {
                     </motion.div>
 
                     <div className="text-center pt-4">
-                        <h2 className="text-2xl font-extrabold text-gray-700 dark:text-gray-300 mb-6 transition-colors duration-500">Explore Future Opportunities</h2>
+                        <h2 className="text-2xl font-extrabold mb-6 transition-colors duration-500">
+                            <span className="bg-gradient-to-r from-purple-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">Explore Future Opportunities</span>
+                        </h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <UpcomingCard 
@@ -1066,32 +1085,51 @@ function ConnectionReporter() {
                     </div>
                     
                     <div className="py-6 px-4 sm:px-8">
-                        <p className="text-center text-sm font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-6 transition-colors duration-500">Trusted and Secured with Leading Web3 Partners</p>
-                        <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-6 opacity-90 transition-colors duration-500">
+                        <p className="text-center text-sm font-semibold uppercase tracking-widest mb-6 transition-colors duration-500">
+                            <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">Trusted & Secured</span>
+                            <span className="text-gray-400 dark:text-gray-600"> with Leading Web3 Partners</span>
+                        </p>
+                        <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-6 transition-opacity duration-500">
                             
-                            <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors duration-200">
-                                <Icon name="fox" className="w-6 h-6 sm:w-7 sm:h-7" color="currentColor" />
-                                <span className="text-lg sm:text-xl font-bold hidden sm:block">MetaMask</span>
+                            <div className="flex items-center space-x-3 group">
+                                <img 
+                                    src="/metamask-icon.svg" 
+                                    alt="MetaMask" 
+                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300"
+                                />
+                                <span className="text-base sm:text-lg font-bold text-gray-500 dark:text-gray-400 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors duration-300 hidden sm:block">MetaMask</span>
                             </div>
                             
-                            <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors duration-200">
-                                <Icon name="zap" className="w-6 h-6 sm:w-7 sm:h-7" color="currentColor" />
-                                <span className="text-lg sm:text-xl font-bold hidden sm:block">Uniswap</span>
+                            <div className="flex items-center space-x-3 group">
+                                <img 
+                                    src="/Uniswap_icon_pink.svg" 
+                                    alt="Uniswap" 
+                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300"
+                                />
+                                <span className="text-base sm:text-lg font-bold text-gray-500 dark:text-gray-400 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors duration-300 hidden sm:block">Uniswap</span>
                             </div>
 
-                            <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400 transition-colors duration-200">
-                                <Icon name="creditCard" className="w-6 h-6 sm:w-7 sm:h-7" color="currentColor" />
-                                <span className="text-lg sm:text-xl font-bold hidden sm:block">Binance</span>
+                            <div className="flex items-center space-x-3 group">
+                                <img 
+                                    src="/binance.svg" 
+                                    alt="Binance" 
+                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300"
+                                />
+                                <span className="text-base sm:text-lg font-bold text-gray-500 dark:text-gray-400 group-hover:text-yellow-500 dark:group-hover:text-yellow-400 transition-colors duration-300 hidden sm:block">Binance</span>
                             </div>
                             
-                            <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-500 transition-colors duration-200">
-                                <Icon name="scanLine" className="w-6 h-6 sm:w-7 sm:h-7" color="currentColor" />
-                                <span className="text-lg sm:text-xl font-bold hidden sm:block">Solana</span>
+                            <div className="flex items-center space-x-3 group">
+                                <img 
+                                    src="/solana.svg" 
+                                    alt="Solana" 
+                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300"
+                                />
+                                <span className="text-base sm:text-lg font-bold text-gray-500 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-500 transition-colors duration-300 hidden sm:block">Solana</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="text-center mt-6 text-xs text-gray-400 dark:text-gray-500 transition-colors duration-500">
+                    <div className="text-center mt-6 text-xs text-gray-500 dark:text-gray-500 transition-colors duration-500">
                         Network: {chainId ? CHAIN_NAMES[chainId] || "Unknown" : "Not Connected"} | Contract: 0x...A1B2C3
                     </div>
                 </div>
