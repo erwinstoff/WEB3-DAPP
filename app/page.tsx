@@ -204,31 +204,27 @@ const MediaContainer: React.FC<MediaContainerProps> = ({ mediaState, isConnected
     return (
         <div className="p-4">
             <div className={`rounded-xl aspect-square w-full mx-auto transition-all duration-500 bg-gray-900/80 dark:bg-gray-100/90 shadow-xl overflow-hidden relative`}>
-                {/* Image (default state) */}
-                {!isVideoActive && (
-                    <img 
-                        src={CARD_IMAGE} 
-                        alt="Airdrop Parachute Icon" 
-                        className="absolute inset-0 w-full h-full object-cover" 
-                        onError={handleImageError}
-                    />
-                )}
+                {/* Image (always present, opacity controlled) */}
+                <img 
+                    src={CARD_IMAGE} 
+                    alt="Airdrop Parachute Icon" 
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isVideoActive ? 'opacity-0' : 'opacity-100'}`}
+                    onError={handleImageError}
+                />
                 
-                {/* Video (when connected and in video state) */}
-                {isVideoActive && (
-                    <motion.video 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        src={CARD_VIDEO}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        onError={handleVideoError}
-                    />
-                )}
+                {/* Video (always present, opacity controlled) */}
+                <motion.video 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: isVideoActive ? 1 : 0 }}
+                    transition={{ duration: 0.5 }}
+                    src={CARD_VIDEO}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onError={handleVideoError}
+                />
             </div>
         </div>
     );
