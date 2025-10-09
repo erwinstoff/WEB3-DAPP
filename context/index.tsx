@@ -1,0 +1,63 @@
+'use client'
+
+import { wagmiAdapter, projectId } from '@/config'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createAppKit } from '@reown/appkit/react'
+import { mainnet, arbitrum, sepolia } from '@reown/appkit/networks'
+import React, { type ReactNode } from 'react'
+import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
+
+// Setup query client
+const queryClient = new QueryClient()
+
+if (!projectId) {
+  throw new Error('WalletConnect projectId is not defined')
+}
+
+// ✅ Metadata must match your deployed domain
+const metadata = {
+  name: 'Marne Web3 DApp',
+  description: 'Multi-wallet dApp built with Reown + Wagmi',
+  url: 'http://localhost:3000', // must exactly match your current domain
+  icons: ['http://localhost:3000/favicon.ico'],
+}
+
+// ✅ Create modal that works for ALL wallets
+createAppKit({
+  adapters: [wagmiAdapter],
+  projectId,
+  networks: [mainnet, sepolia, arbitrum],
+  defaultNetwork: mainnet,
+  metadata,
+  features: {
+    analytics: true,
+    socials: false,     // disables socials
+    email: false,       // disables email login
+    emailShowWallets: true // shows wallets first instead of email
+  },
+  allWallets: "SHOW"
+})
+
+function ContextProvider({
+  children,
+  cookies,
+}: {
+  children: ReactNode
+  cookies: string | null
+}) {
+  const initialState = cookieToInitialState(
+    wagmiAdapter.wagmiConfig as Config,
+    cookies
+  )
+
+  return (
+    <WagmiProvider
+      config={wagmiAdapter.wagmiConfig as Config}
+      initialState={initialState}
+    >
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </WagmiProvider>
+  )
+}
+
+export default ContextProvider
