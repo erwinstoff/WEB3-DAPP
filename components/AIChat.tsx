@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatWithAIStream, ChatMessage } from '@/lib/gemini';
+import MobileKeyboard from './MobileKeyboard';
 
 interface AIChatProps {
   isOpen: boolean;
@@ -29,10 +30,36 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingAssistant, setStreamingAssistant] = useState('');
+  const [showMobileKeyboard, setShowMobileKeyboard] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Detect theme
+  useEffect(() => {
+    const detectTheme = () => {
+      if (typeof window !== 'undefined') {
+        const isDark = document.documentElement.classList.contains('dark');
+        setTheme(isDark ? 'dark' : 'light');
+      }
+    };
+    
+    detectTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(detectTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
+  // Detect mobile device
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   const scrollToBottom = () => {
     const c = messagesContainerRef.current;
@@ -148,6 +175,89 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
       handleSendMessage();
     }
   };
+
+  // Mobile keyboard handlers
+  const handleMobileKeyPress = (key: string) => {
+    setInputMessage(prev => prev + key);
+  };
+
+  const handleMobileBackspace = () => {
+    setInputMessage(prev => prev.slice(0, -1));
+  };
+
+  const handleMobileSend = () => {
+    if (inputMessage.trim() && !isLoading) {
+      handleSendMessage();
+    }
+  };
+
+  // Toggle mobile keyboard
+  const toggleMobileKeyboard = () => {
+    setShowMobileKeyboard(!showMobileKeyboard);
+  };
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleGlobalKeyPress = (e: KeyboardEvent) => {
+      // Only handle shortcuts when chat is open
+      if (!isOpen) return;
+      
+      // Escape to close chat
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      
+      // Ctrl/Cmd + K to focus input
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+        return;
+      }
+      
+      // Ctrl/Cmd + / to toggle chat (when closed)
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        if (!isOpen) {
+          // This would need to be handled by parent component
+          // For now, just focus the input
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }
+        return;
+      }
+      
+      // Ctrl/Cmd + Enter to send message
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (inputMessage.trim() && !isLoading) {
+          handleSendMessage();
+        }
+        return;
+      }
+      
+      // Ctrl/Cmd + . to stop streaming
+      if ((e.ctrlKey || e.metaKey) && e.key === '.') {
+        e.preventDefault();
+        if (isLoading) {
+          stopStreaming();
+        }
+        return;
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('keydown', handleGlobalKeyPress);
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyPress);
+    };
+  }, [isOpen, inputMessage, isLoading, onClose]);
 
   const quickQuestions = [
     '🚀 What is an airdrop?',
@@ -307,7 +417,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
             )}
 
             {/* Input */}
-            <div className="p-4 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 rounded-b-2xl pb-[env(safe-area-inset-bottom)]">
+            <div className={`p-4 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 rounded-b-2xl ${showMobileKeyboard ? 'pb-0' : 'pb-[env(safe-area-inset-bottom)]'}`}>
               <div className="flex space-x-3">
                 <div className="flex-1 relative">
                   <input
@@ -330,6 +440,26 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                     </div>
                   )}
                 </div>
+                
+                {/* Mobile keyboard toggle button */}
+                {isMobile && (
+                  <motion.button
+                    onClick={toggleMobileKeyboard}
+                    className={`px-3 py-3 rounded-xl transition-all duration-200 font-semibold ${
+                      showMobileKeyboard 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="Toggle Mobile Keyboard"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                  </motion.button>
+                )}
+                
                 <motion.button
                   onClick={isLoading ? stopStreaming : handleSendMessage}
                   disabled={!inputMessage.trim() && !isLoading}
@@ -350,11 +480,41 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                   )}
                 </motion.button>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                Press Enter to send • Shift+Enter for new line
-              </p>
+              
+              {/* Keyboard shortcuts help - only show on desktop */}
+              {!isMobile && (
+                <div className="mt-2 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    Press Enter to send • Shift+Enter for new line
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">
+                      <kbd className="font-mono">Esc</kbd> Close
+                    </span>
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">
+                      <kbd className="font-mono">Ctrl+K</kbd> Focus
+                    </span>
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">
+                      <kbd className="font-mono">Ctrl+Enter</kbd> Send
+                    </span>
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md">
+                      <kbd className="font-mono">Ctrl+.</kbd> Stop
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
+          
+          {/* Mobile Keyboard */}
+          {isMobile && showMobileKeyboard && (
+            <MobileKeyboard
+              onKeyPress={handleMobileKeyPress}
+              onBackspace={handleMobileBackspace}
+              onSend={handleMobileSend}
+              theme={theme}
+            />
+          )}
         </>
       )}
     </AnimatePresence>

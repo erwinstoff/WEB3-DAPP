@@ -201,7 +201,7 @@ const MediaContainer: React.FC<MediaContainerProps> = ({ mediaState, isConnected
     const isVideoActive = isConnected && mediaState === 'video';
 
     // kept for compatibility; image uses next/image
-    const handleImageError = () => {};
+    // const handleImageError = () => {};
 
     const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
         console.error('Video failed to load:', e);
@@ -979,7 +979,7 @@ function ConnectionReporter() {
             },
             title: 'Get help via chat'
         };
-    }, [isClaimed, isConnected, eligibilityChecked, isLoading, isEligible, claimAirdrop, connectWallet]);
+    }, [isClaimed, isConnected, eligibilityChecked, isLoading, isEligible, claimAirdrop, connectWallet, address]);
 
     const statusContent = getStatusContent(); 
     const claimButtonProps = getClaimButtonProps();
@@ -989,6 +989,33 @@ function ConnectionReporter() {
     
   useEffect(() => {
         setIsHydrated(true);
+    }, []);
+
+    // Global keyboard shortcuts for AI chat
+    useEffect(() => {
+        const handleGlobalKeyPress = (e: KeyboardEvent) => {
+            // Ctrl/Cmd + / to open AI chat
+            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                e.preventDefault();
+                setIsAIChatOpen(true);
+                return;
+            }
+            
+            // Ctrl/Cmd + Shift + A to open AI chat (alternative)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
+                e.preventDefault();
+                setIsAIChatOpen(true);
+                return;
+            }
+        };
+
+        // Add event listener
+        document.addEventListener('keydown', handleGlobalKeyPress);
+        
+        // Cleanup
+        return () => {
+            document.removeEventListener('keydown', handleGlobalKeyPress);
+        };
     }, []);
 
     const formattedAddress: string = isHydrated && isConnected && address
@@ -1335,7 +1362,12 @@ function ConnectionReporter() {
                 
                 {/* Tooltip */}
                 <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    Ask Alex anything about airdrops!
+                    <div className="text-center">
+                        <div className="font-semibold mb-1">Ask Alex anything!</div>
+                        <div className="text-gray-300">
+                            <kbd className="font-mono bg-gray-700 px-1 rounded">Ctrl+/</kbd> to open
+                        </div>
+                    </div>
                 </div>
             </motion.button>
 

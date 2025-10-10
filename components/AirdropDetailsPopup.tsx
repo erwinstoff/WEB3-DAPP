@@ -99,10 +99,10 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
         
         const HeaderTag = `h${level}` as keyof JSX.IntrinsicElements;
         
-        return (
-          <HeaderTag key={index} className={headerClasses[level as keyof typeof headerClasses]}>
-            {headerText}
-          </HeaderTag>
+        return React.createElement(
+          HeaderTag,
+          { key: index, className: headerClasses[level as keyof typeof headerClasses] },
+          headerText
         );
       }
       
