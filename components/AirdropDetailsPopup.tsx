@@ -473,41 +473,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                     </div>
                   </motion.div>
 
-                  {/* Disclaimer */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.0, duration: 0.6 }}
-                    className="mt-8 relative"
-                    style={{ transform: 'translateZ(10px)' }}
-                  >
-                    <div className="relative bg-gradient-to-br from-yellow-50 via-amber-100/50 to-orange-50 dark:from-yellow-900/30 dark:via-amber-800/20 dark:to-orange-900/30 border border-yellow-200/50 dark:border-yellow-700/50 rounded-xl p-6 backdrop-blur-sm overflow-hidden">
-                      {/* Disclaimer Background Glow */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-orange-400/5 rounded-xl" />
-                      
-                      <div className="relative z-10 flex items-start space-x-3">
-                        <motion.div
-                          animate={{ rotate: [0, 10, -10, 0] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                          className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0"
-                        >
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                          </svg>
-                        </motion.div>
-                        <div>
-                          <h4 className="font-bold text-yellow-800 dark:text-yellow-200 mb-2 flex items-center space-x-2">
-                            <span>Disclaimer</span>
-                            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                          </h4>
-                          <p className="text-yellow-700 dark:text-yellow-300 text-sm leading-relaxed">
-                            This AI analysis is for informational purposes only and should not be considered as financial advice. 
-                            Always do your own research and consult with financial advisors before making investment decisions.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
+                  {/* Disclaimer removed per request */}
                 </motion.div>
               </motion.div>
             </div>

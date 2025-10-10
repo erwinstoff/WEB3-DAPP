@@ -60,6 +60,23 @@ body {
   background: rgba(59, 130, 246, 0.7);
 }
 
+/* Hide scrollbar line on mobile (iOS/Android) */
+@media (hover: none) and (pointer: coarse) {
+  html, body {
+    scrollbar-width: none; /* Firefox */
+  }
+  ::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: transparent !important;
+  }
+}
+
 /* Glass morphism utilities */
 .glass {
   background: rgba(255, 255, 255, 0.1);

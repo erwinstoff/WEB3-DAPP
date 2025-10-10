@@ -10,21 +10,37 @@ interface AIChatProps {
 }
 
 const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
+  const STORAGE_KEY = 'ai_chat_messages_v1';
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('ai_chat_messages_v1');
+        if (raw) {
+          const saved = JSON.parse(raw) as ChatMessage[];
+          if (Array.isArray(saved) && saved.length > 0) return saved;
+        }
+      }
+    } catch {}
+    return [{
       role: 'assistant',
-      content: '👋 Hello! I\'m your AI Web3 assistant. I can help you with questions about cryptocurrency, airdrops, DeFi, and blockchain technology. How can I assist you today?'
-    }
-  ]);
+      content: '👋 Hey, I\'m Alex! I can guide you through airdrops, wallets, gas, and DeFi. Ask anything and I\'ll give a clear, friendly walkthrough with quick tips and a short summary when it helps. ✨'
+    }];
+  });
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingAssistant, setStreamingAssistant] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const c = messagesContainerRef.current;
+    if (c) {
+      c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
@@ -36,6 +52,40 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
       inputRef.current.focus();
     }
   }, [isOpen]);
+
+  // Ensure we land at the bottom when opening the modal
+  useEffect(() => {
+    if (isOpen) {
+      const id = setTimeout(() => scrollToBottom(), 60);
+      return () => clearTimeout(id);
+    }
+  }, [isOpen]);
+
+  // Keep autoscrolling during streaming
+  useEffect(() => {
+    if (streamingAssistant) scrollToBottom();
+  }, [streamingAssistant]);
+
+  // Load saved conversation on mount
+  useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+      if (raw) {
+        const saved = JSON.parse(raw) as ChatMessage[];
+        if (Array.isArray(saved) && saved.length > 0) {
+          setMessages(saved);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Persist conversation on change (keep last 30 messages)
+  useEffect(() => {
+    try {
+      const trimmed = messages.slice(-30);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+    } catch {}
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -54,15 +104,20 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
 
     try {
       const history: ChatMessage[] = [...messages, userMessage];
+      let accum = '';
       await chatWithAIStream(
         history,
-        (delta) => setStreamingAssistant(prev => prev + delta),
+        (delta) => {
+          accum += delta;
+          setStreamingAssistant(prev => prev + delta);
+        },
         abortRef.current.signal
       );
-      if (streamingAssistant) {
-        setMessages(prev => [...prev, { role: 'assistant', content: streamingAssistant }]);
-        setStreamingAssistant('');
+      const finalText = accum.trim();
+      if (finalText) {
+        setMessages(prev => [...prev, { role: 'assistant', content: finalText }]);
       }
+      setStreamingAssistant('');
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: ChatMessage = {
@@ -129,7 +184,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
               stiffness: 100,
               duration: 0.4
             }}
-            className="fixed inset-4 sm:bottom-4 sm:right-4 sm:top-auto sm:left-auto w-auto max-w-md h-[calc(100vh-2rem)] sm:h-[600px] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-neutral-800 z-50 flex flex-col"
+            className="fixed inset-x-3 bottom-3 sm:bottom-4 sm:right-4 sm:top-auto sm:left-auto w-auto max-w-md h-[75dvh] sm:h-[600px] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-neutral-800 z-50 flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-neutral-800 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-2xl">
@@ -161,7 +216,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-24 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
               {messages.map((message, index) => (
                 <motion.div
                   key={index}
@@ -177,7 +232,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                       </div>
                     )}
                     <motion.div
-                      className={`p-4 rounded-2xl shadow-sm ${
+                      className={`p-4 rounded-2xl shadow-sm leading-[1.55] tracking-tight ${
                         message.role === 'user'
                           ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                           : 'bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700'
@@ -185,7 +240,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                       whileHover={{ scale: 1.01 }}
                       transition={{ type: "spring", stiffness: 300 }}
                     >
-                      <p className="text-base leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-[0.96rem] sm:text-base whitespace-pre-wrap">{message.content}</p>
                     </motion.div>
                     {message.role === 'user' && (
                       <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
@@ -214,7 +269,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                           <motion.div className="w-2 h-2 bg-purple-500 rounded-full" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }} />
                           <motion.div className="w-2 h-2 bg-pink-500 rounded-full" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }} />
                         </div>
-                        <button onClick={stopStreaming} className="text-xs px-2 py-1 rounded bg-gray-200 dark:bg-gray-700">Stop</button>
+                        {/* Stop button removed; integrated into send button */}
                       </div>
                     </div>
                   </div>
@@ -252,7 +307,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
             )}
 
             {/* Input */}
-            <div className="p-4 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 rounded-b-2xl">
+            <div className="p-4 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 rounded-b-2xl pb-[env(safe-area-inset-bottom)]">
               <div className="flex space-x-3">
                 <div className="flex-1 relative">
                   <input
@@ -276,17 +331,23 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                   )}
                 </div>
                 <motion.button
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || isLoading}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:from-gray-300 disabled:to-gray-400 dark:disabled:from-gray-600 dark:disabled:to-gray-700 text-white rounded-xl transition-all duration-200 disabled:cursor-not-allowed shadow-lg hover:shadow-xl font-semibold"
+                  onClick={isLoading ? stopStreaming : handleSendMessage}
+                  disabled={!inputMessage.trim() && !isLoading}
+                  className={`px-3 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-semibold text-white ${isLoading ? 'bg-red-600 hover:bg-red-700' : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'}`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   animate={isLoading ? { scale: [1, 1.1, 1] } : {}}
                   transition={{ duration: 0.5, repeat: isLoading ? Infinity : 0 }}
+                  aria-label={isLoading ? 'Stop' : 'Send'}
+                  title={isLoading ? 'Stop' : 'Send'}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
+                  {isLoading ? (
+                    // stop icon (square)
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><rect x="6" y="6" width="8" height="8" rx="1"/></svg>
+                  ) : (
+                    // send icon
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                  )}
                 </motion.button>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">

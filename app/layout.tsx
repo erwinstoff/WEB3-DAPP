@@ -24,6 +24,13 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f9fafb" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body className={inter.className}>
         <ContextProvider cookies={cookies}>{children}</ContextProvider>
       </body>

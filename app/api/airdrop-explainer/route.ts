@@ -87,22 +87,27 @@ This information is for educational purposes only. Always do your own research a
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     const prompt = `
-Write a positive, engaging, and informative paragraph about this airdrop, its rewards, how to claim, and why it's exciting. Use friendly tone and emojis if natural.
+Write a long, well-structured, and engaging analysis of the upcoming airdrop. Use a friendly tone, include tasteful emojis, and organize using markdown headings and lists.
 
 Airdrop Details:
 - Title: ${airdrop.title}
 - Snapshot Date: ${airdrop.snapshot}
 - Eligibility Criteria: ${airdrop.eligibility}
 
-Please write an engaging explanation that covers:
-1. What this airdrop is about and why it's exciting 🚀
-2. The rewards and benefits users can expect 💰
-3. How to claim the airdrop step-by-step 📝
-4. Why this is a great opportunity for the community 🎉
-5. Important dates and requirements to remember 📅
-6. Market context and project potential 📈
+Cover at least these sections:
+1. What the project is and why this airdrop matters 🚀
+2. Rewards breakdown and value considerations 💰
+3. How to prepare and eligibility checklist ✅
+4. Step-by-step claiming guide 📝
+5. Security best-practices and common scams to avoid 🔐
+6. Timelines, reminders, and what to watch out for 📅
+7. Ecosystem/market context and longer-term outlook 📈
+8. Tips for new users to get started smoothly 🧭
 
-Use a friendly, enthusiastic tone with natural emojis. Make it sound exciting and accessible to both beginners and experienced crypto users. Format it nicely with clear sections and engaging language.
+Style rules:
+- Be thorough but clear; use short paragraphs and bullet points
+- Add 2–4 emojis throughout (not after every sentence)
+- End with a short "Quick summary" of 3–4 bullets
 `;
 
     console.log('Calling Gemini API...');

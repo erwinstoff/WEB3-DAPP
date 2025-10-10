@@ -11,9 +11,39 @@ export async function POST(req: NextRequest) {
     }
 
     const { messages } = await req.json();
+    // Build airdrop context from env
+    const ctxLines: string[] = [];
+    const ctxRaw = process.env.NEXT_PUBLIC_AIRDROP_CONTEXT;
+    if (ctxRaw) ctxLines.push(ctxRaw);
+    const kv = (
+      [
+        ['Name', process.env.NEXT_PUBLIC_AIRDROP_NAME],
+        ['Token', process.env.NEXT_PUBLIC_AIRDROP_TOKEN],
+        ['Snapshot', process.env.NEXT_PUBLIC_AIRDROP_SNAPSHOT],
+        ['Eligibility', process.env.NEXT_PUBLIC_AIRDROP_ELIGIBILITY],
+        ['Rewards', process.env.NEXT_PUBLIC_AIRDROP_REWARDS],
+        ['ClaimSteps', process.env.NEXT_PUBLIC_AIRDROP_CLAIM_STEPS],
+        ['Docs', process.env.NEXT_PUBLIC_AIRDROP_DOCS_URL],
+        ['Support', process.env.NEXT_PUBLIC_CONTACT_URL],
+      ] as const
+    ).filter(([, v]) => !!v) as Array<[string, string]>;
+    if (kv.length) {
+      ctxLines.push('Structured Airdrop Facts:');
+      for (const [k, v] of kv) ctxLines.push(`- ${k}: ${v}`);
+    }
+    const airdropContext = ctxLines.length ? ctxLines.join('\n') : undefined;
+
     const systemPrompt = `You are "Alex", a friendly, professional Web3 assistant in a crypto airdrop dApp.
-Be concise, clear, and safety-first. Explain simply, avoid hype, include concrete steps and cautions.
-CRITICAL: Do not repeat or paraphrase the user's question. Do not ask follow-up questions unless the user asks you to. Start directly with the answer.`;
+Safety first. Explain simply, avoid hype, include concrete steps and cautions.
+CRITICAL: Do not repeat or paraphrase the user's question. Do not ask follow-up questions unless the user asks you to. Start directly with the answer.
+
+Tone & Style:
+- Longer, well-structured answers by default; keep clear and scannable
+- Short paragraphs, use lists and subtle emphasis when helpful
+- Use 2–4 tasteful emojis to add warmth (not after every sentence)
+- When appropriate (e.g., long answers), append a brief "Quick summary" with 2–3 bullets
+
+${airdropContext ? `Project Context (authoritative):\n${airdropContext}\n` : ''}`;
 
     // Assemble prompt from history
     let prompt = systemPrompt + '\n\n';
@@ -23,30 +53,34 @@ CRITICAL: Do not repeat or paraphrase the user's question. Do not ask follow-up 
     }
     prompt += 'assistant:';
 
-    // Use Gemini non-stream generate (fallback) but stream as chunks from text
+    // Prefer true streaming for faster first token
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    const result = await model.generateContent(prompt);
-    const text = (await result.response).text();
-
-    // Stream the text to client as SSE-like basic stream
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        // Chunk the text to simulate token streaming
-        const words = text.split(/(\s+)/);
-        let i = 0;
-        const send = () => {
-          if (i >= words.length) {
-            controller.close();
-            return;
+      async start(controller) {
+        try {
+          const result = await model.generateContentStream({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 896, temperature: 0.6 },
+          });
+          for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            if (chunkText) controller.enqueue(encoder.encode(chunkText));
           }
-          controller.enqueue(encoder.encode(words[i]));
-          i++;
-          setTimeout(send, 15);
-        };
-        send();
+          controller.close();
+        } catch (err) {
+          // Fallback to non-streaming on error
+          try {
+            const fallback = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 896, temperature: 0.6 } });
+            const text = (await fallback.response).text();
+            controller.enqueue(encoder.encode(text));
+            controller.close();
+          } catch {
+            controller.error(err);
+          }
+        }
       },
     });
 
