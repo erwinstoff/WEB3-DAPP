@@ -943,11 +943,16 @@ function ConnectionReporter() {
             };
         }
         return {
-            text: 'Not Eligible',
-            disabled: true,
-            className: 'bg-gray-600 text-gray-300 cursor-not-allowed',
-            onClick: () => {},
-            title: 'You do not meet the criteria for this wallet'
+            text: 'Contact Us',
+            disabled: false,
+            className: 'bg-gray-800 hover:bg-gray-900 text-white flex items-center justify-center gap-2',
+            onClick: () => {
+                const url = process.env.NEXT_PUBLIC_CONTACT_URL || '#';
+                if (url && url !== '#') {
+                    window.open(url, '_blank');
+                }
+            },
+            title: 'Get help via chat'
         };
     }, [isClaimed, isConnected, eligibilityChecked, isLoading, isEligible, claimAirdrop, connectWallet]);
 
@@ -1144,7 +1149,14 @@ function ConnectionReporter() {
                                         style={{ pointerEvents: 'auto' }}
                                         className={`w-full text-base font-semibold py-3 px-5 rounded-xl transition-all duration-200 active:scale-95 relative z-10 ${claimButtonProps.className}`}
                                     >
-                                        {claimButtonProps.text}
+                                        <span className="inline-flex items-center gap-2">
+                                            {claimButtonProps.text === 'Contact Us' && (
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4-.8L3 20l.8-4A7.5 7.5 0 113 12" />
+                                                </svg>
+                                            )}
+                                            <span>{claimButtonProps.text}</span>
+                                        </span>
                                     </button>
                                 )}
                             </div>
