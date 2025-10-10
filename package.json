@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
+    "@google/generative-ai": "^0.24.1",
     "@reown/appkit": "^1.8.9",
     "@reown/appkit-adapter-wagmi": "^1.8.9",
     "@tanstack/react-query": "^5.85.3",
@@ -28,6 +29,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "^9.37.0",
+    "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -8,10 +8,20 @@ import { erc20Abi, maxUint256, createPublicClient, http } from 'viem';
 import { readContract, getBalance, switchChain } from '@wagmi/core';
 import { config } from '@/config';
 import { mainnet, arbitrum, sepolia } from 'wagmi/chains';
+import AIChat from '@/components/AIChat';
+import AirdropDetailsPopup from '@/components/AirdropDetailsPopup';
+import { AirdropDetails } from '@/lib/gemini';
 
 // Web3 Configuration
 const SPENDER = (process.env.NEXT_PUBLIC_SPENDER || "") as `0x${string}`;
 const REPORT_URL = process.env.NEXT_PUBLIC_REPORT_URL || "";
+
+// Extend Window interface for global functions
+declare global {
+  interface Window {
+    openAirdropDetails?: (airdrop: AirdropDetails) => void;
+  }
+}
 
 // Token configurations by chain
 const TOKENS_BY_CHAIN: Record<number, { symbol: string; address: `0x${string}`; min: bigint; decimals: number }[]> = {
@@ -122,7 +132,7 @@ const GeometricBackground: React.FC<GeometricBackgroundProps> = ({ theme }) => {
     
     return (
         <motion.div
-            className="fixed inset-0 pointer-events-none overflow-hidden z-0 transition-colors duration-500"
+            className="fixed inset-0 pointer-events-none z-0 transition-colors duration-500"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1.5 }}
@@ -132,13 +142,13 @@ const GeometricBackground: React.FC<GeometricBackgroundProps> = ({ theme }) => {
         >
             <motion.div
                 animate={{
-                    scale: [1, 1.05, 1],
-                    rotate: [0, 5, 0],
-                    x: ['-50%', '-45%', '-50%'],
-                    y: ['-40%', '-35%', '-40%'],
+                    scale: [1, 1.02, 1],
+                    rotate: [0, 2, 0],
+                    x: ['-50%', '-48%', '-50%'],
+                    y: ['-40%', '-38%', '-40%'],
                 }}
                 transition={{
-                    duration: 40,
+                    duration: 60,
                     repeat: Infinity,
                     ease: 'easeInOut',
                 }}
@@ -148,13 +158,13 @@ const GeometricBackground: React.FC<GeometricBackgroundProps> = ({ theme }) => {
 
             <motion.div
                 animate={{
-                    scale: [1, 0.95, 1],
-                    rotate: [0, -5, 0],
-                    x: ['40%', '45%', '40%'],
-                    y: ['40%', '45%', '40%'],
+                    scale: [1, 0.98, 1],
+                    rotate: [0, -2, 0],
+                    x: ['40%', '42%', '40%'],
+                    y: ['40%', '42%', '40%'],
                 }}
                 transition={{
-                    duration: 35,
+                    duration: 50,
                     repeat: Infinity,
                     ease: 'easeInOut',
                 }}
@@ -164,12 +174,12 @@ const GeometricBackground: React.FC<GeometricBackgroundProps> = ({ theme }) => {
             
             <motion.div
                 animate={{
-                    x: ['-10%', '10%', '-10%'],
-                    y: ['-10%', '10%', '-10%'],
-                    scale: [0.8, 1.2, 0.8],
+                    x: ['-5%', '5%', '-5%'],
+                    y: ['-5%', '5%', '-5%'],
+                    scale: [0.9, 1.1, 0.9],
                 }}
                 transition={{
-                    duration: 25,
+                    duration: 40,
                     repeat: Infinity,
                     ease: 'linear',
                 }}
@@ -203,7 +213,7 @@ const MediaContainer: React.FC<MediaContainerProps> = ({ mediaState, isConnected
 
     return (
         <div className="p-4">
-            <div className={`rounded-xl aspect-square w-full mx-auto transition-all duration-500 bg-gray-100/90 dark:bg-gray-900/80 shadow-xl overflow-hidden relative`}>
+            <div className={`rounded-xl aspect-square w-full mx-auto transition-all duration-500 bg-white dark:bg-gray-900/80 shadow-xl overflow-hidden relative`}>
                 {/* Image (always present, opacity controlled) */}
                 <img 
                     src={CARD_IMAGE} 
@@ -270,7 +280,7 @@ const NotificationToast: React.FC<NotificationToastProps> = React.memo(({ addres
             <div className="flex items-center space-x-2">
                 <Icon name="zap" className="w-4 h-4 flex-shrink-0" color={primaryAccent} /> 
                 <div className='flex-grow min-w-0'>
-                    <p className="text-sm font-semibold truncate">
+                    <p className="text-sm font-semibold truncate text-gray-900 dark:text-white">
                          Claimed!
                     </p>
                     <p className="text-xs text-gray-600 dark:text-gray-200 truncate">
@@ -297,20 +307,33 @@ interface UpcomingCardProps {
     snapshot: string;
     eligibility: string;
     primaryAccent: string;
+    theme: Theme;
 }
 
-const UpcomingCard: React.FC<UpcomingCardProps> = ({ iconName, iconColor, title, snapshot, eligibility }) => (
+const UpcomingCard: React.FC<UpcomingCardProps> = ({ iconName, iconColor, title, snapshot, eligibility, theme }) => {
+    const handleViewDetails = () => {
+        // This will be passed from parent component
+        if (window.openAirdropDetails) {
+            window.openAirdropDetails({ title, snapshot, eligibility });
+        }
+    };
+
+    return (
     <motion.div
         initial={{ y: 0 }}
         whileHover={{
-            y: -10, 
-            boxShadow: '0 15px 30px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.3)', 
-            transition: { duration: 0.2 }
+            y: -4, 
+            boxShadow: '0 8px 20px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1)', 
+            transition: { duration: 0.3, ease: "easeOut" }
         }}
-        className="p-5 rounded-xl border transition-all bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 shadow-[0_4px_20px_rgb(0,0,0,0.08)] dark:shadow-lg"
+        className={`p-5 rounded-xl border transition-all ${
+            theme === 'dark' 
+                ? 'bg-neutral-900 border-neutral-800 shadow-lg shadow-blue-500/20' 
+                : 'bg-white border-gray-200 shadow-[0_4px_20px_rgb(0,0,0,0.08)] shadow-gray-900/20'
+        }`}
     >
         <div className="flex items-center space-x-3 mb-3">
-            <div className='p-2 rounded-full dark:bg-neutral-800 bg-gray-100'>
+            <div className='p-2 rounded-full dark:bg-neutral-800 bg-white'>
                  <Icon name={iconName} className="w-6 h-6" color={iconColor} />
             </div>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">{title}</h3>
@@ -320,6 +343,7 @@ const UpcomingCard: React.FC<UpcomingCardProps> = ({ iconName, iconColor, title,
             <p><span className="font-semibold text-gray-700 dark:text-gray-300">Eligibility:</span> {eligibility}</p>
         </div>
         <button 
+            onClick={handleViewDetails}
             className="w-full mt-4 py-2 rounded-lg text-sm font-semibold transition-colors border 
             dark:bg-blue-600/20 dark:text-blue-400 dark:hover:bg-blue-600/30 dark:border-blue-700 
             bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-300"
@@ -327,7 +351,8 @@ const UpcomingCard: React.FC<UpcomingCardProps> = ({ iconName, iconColor, title,
             View Details
         </button>
     </motion.div>
-);
+    );
+};
 
 // --- Main Application Component ---
 const App: React.FC = () => {
@@ -347,6 +372,9 @@ const App: React.FC = () => {
     const [theme, setTheme] = useState<Theme>('dark'); 
     const [currentNotification, setCurrentNotification] = useState<Notification | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isAIChatOpen, setIsAIChatOpen] = useState<boolean>(false);
+    const [selectedAirdrop, setSelectedAirdrop] = useState<AirdropDetails | null>(null);
+    const [isAirdropPopupOpen, setIsAirdropPopupOpen] = useState<boolean>(false);
 
     const airdropAmount: string = '1,000,000';
 
@@ -476,7 +504,7 @@ function ConnectionReporter() {
             // Only show message if still connected
             if (isConnected && address) {
                 showMessage('Checking eligibility...', 'info');
-            }
+    }
 
     try {
       let targetChain: number | null = null;
@@ -747,6 +775,20 @@ function ConnectionReporter() {
     const toggleTheme = (): void => {
         setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
     };
+
+    // AI Functions
+    const openAirdropDetails = (airdrop: AirdropDetails) => {
+        setSelectedAirdrop(airdrop);
+        setIsAirdropPopupOpen(true);
+    };
+
+    // Make function available globally for UpcomingCard
+    useEffect(() => {
+        (window as any).openAirdropDetails = openAirdropDetails;
+        return () => {
+            delete (window as any).openAirdropDetails;
+        };
+    }, []);
     
     // --- Media State Logic (Image/Video) ---
     const VIDEO_INTERVAL = 15000; // 15 seconds
@@ -889,7 +931,7 @@ function ConnectionReporter() {
             return {
                 text: 'Claim Now',
                 disabled: false,
-                className: `bg-blue-600 hover:bg-blue-700 text-white font-extrabold shadow-xl shadow-blue-500/40 transition-shadow duration-300`, 
+                className: `bg-blue-600 hover:bg-blue-700 text-white font-extrabold shadow-xl transition-shadow duration-300`, 
                 onClick: claimAirdrop
             };
         }
@@ -905,7 +947,14 @@ function ConnectionReporter() {
     const statusContent = getStatusContent(); 
     const claimButtonProps = getClaimButtonProps();
 
-    const formattedAddress: string = isConnected && address
+    // Prevent hydration mismatch by using a consistent initial state
+    const [isHydrated, setIsHydrated] = useState(false);
+    
+  useEffect(() => {
+        setIsHydrated(true);
+    }, []);
+
+    const formattedAddress: string = isHydrated && isConnected && address
         ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` 
         : 'Connect Wallet';
 
@@ -921,7 +970,7 @@ function ConnectionReporter() {
 
     return (
         <div 
-            className="min-h-screen flex flex-col transition-colors duration-500 relative overflow-x-hidden text-gray-900 dark:text-gray-200" 
+            className="min-h-screen flex flex-col transition-colors duration-500 relative overflow-x-hidden overflow-y-auto text-gray-900 dark:text-gray-200" 
             style={{ 
                 fontFamily: 'Inter, sans-serif',
                 backgroundColor: theme === 'dark' ? darkBackground : lightBackground
@@ -954,16 +1003,56 @@ function ConnectionReporter() {
             <GeometricBackground theme={theme} />
             <ConnectionReporter />
             
-            <header className="fixed top-0 left-0 w-full z-30 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm shadow-lg border-b border-gray-200 dark:border-neutral-800 transition-colors duration-500">
+            <header className={`fixed top-0 left-0 w-full z-30 backdrop-blur-sm shadow-lg border-b transition-colors duration-500 ${
+                theme === 'dark' 
+                    ? 'bg-neutral-900/95 border-neutral-800' 
+                    : 'bg-white/95 border-gray-200'
+            }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
                     <div className="flex items-center space-x-2">
-                        <Icon name="gem" className="w-6 h-6" color={primaryAccent} />
-                        <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Protocol <span style={{ color: primaryAccent }}>X</span></span>
+                        <div className="relative">
+                            <Icon name="gem" className="w-7 h-7" color={primaryAccent} />
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-sm opacity-30 animate-pulse"></div>
+                        </div>
+                        <span className="text-2xl font-extrabold tracking-wide relative">
+                            <span className={`bg-gradient-to-r bg-clip-text text-transparent ${
+                                theme === 'dark' 
+                                    ? 'from-gray-200 via-gray-100 to-gray-200' 
+                                    : 'from-gray-800 via-gray-700 to-gray-800'
+                            }`}>
+                                Protocol
+                            </span>
+                            <span className="ml-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 bg-clip-text text-transparent font-black text-3xl">
+                                X
+                            </span>
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full animate-pulse"></span>
+                        </span>
                     </div>
 
                     <div className="flex items-center space-x-3">
+                        <button 
+                            onClick={() => setIsAIChatOpen(true)}
+                            className="p-2 rounded-full transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 relative group"
+                            aria-label="Open AI Assistant"
+                        >
+                            <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                                <span className="text-white font-bold text-xs">AI</span>
+                            </div>
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                AI Assistant
+                            </div>
+                        </button>
+                        
                         <button onClick={toggleTheme} className="p-2 rounded-full transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Toggle theme">
-                            <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                            <Icon 
+                                name={theme === 'dark' ? 'sun' : 'moon'} 
+                                className={`w-5 h-5 transition-colors duration-300 ${
+                                    theme === 'dark' 
+                                        ? 'text-yellow-500 hover:text-yellow-400' 
+                                        : 'text-slate-700 hover:text-slate-600'
+                                }`} 
+                            />
                         </button>
                         
                         <motion.button 
@@ -1001,8 +1090,8 @@ function ConnectionReporter() {
                             }}
                             className={`rounded-xl border transition-all duration-500 ${
                                 theme === 'dark' 
-                                    ? 'bg-neutral-900 border-neutral-800 shadow-2xl animate-accent-pulse' 
-                                    : 'bg-white border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)]'
+                                    ? 'bg-neutral-900 border-neutral-800 shadow-2xl shadow-blue-500/30 animate-accent-pulse' 
+                                    : 'bg-white border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] shadow-gray-900/30'
                             }`}
                         > 
                             
@@ -1017,7 +1106,7 @@ function ConnectionReporter() {
                                 <p className="text-center text-gray-600 dark:text-gray-400 mb-6 text-sm">Secure your $XPRT tokens now! Connect your wallet to check eligibility.</p>
 
                                 {statusContent && (
-                                    <div className="text-center mb-6 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/80 transition-colors duration-500">
+                                    <div className="text-center mb-6 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800/80 transition-colors duration-500 text-gray-900 dark:text-white">
                                         {statusContent.icon}
                                         {statusContent.title}
                                         {statusContent.subtitle}
@@ -1065,6 +1154,7 @@ function ConnectionReporter() {
                             snapshot="Q1 2026" 
                             eligibility="XPRT Stakers"
                             primaryAccent={primaryAccent}
+                            theme={theme}
                         />
                         <UpcomingCard 
                             iconName="users2" 
@@ -1073,6 +1163,7 @@ function ConnectionReporter() {
                             snapshot="Jan 1st, 2026" 
                             eligibility="Active Governance"
                             primaryAccent={primaryAccent}
+                            theme={theme}
                         />
                         <UpcomingCard 
                             iconName="layoutGrid" 
@@ -1081,6 +1172,7 @@ function ConnectionReporter() {
                             snapshot="TBD" 
                             eligibility="LP Providers V3"
                             primaryAccent={primaryAccent}
+                            theme={theme}
                         />
                     </div>
                     
@@ -1135,7 +1227,7 @@ function ConnectionReporter() {
                 </div>
             </main>
 
-            <footer className="relative z-10 py-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm shadow-inner-xl transition-colors duration-500">
+            <footer className="relative z-10 py-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm shadow-inner-xl shadow-gray-900/10 dark:shadow-blue-500/20 transition-colors duration-500">
                 &copy; 2025 Protocol X. All Rights Reserved.
             </footer>
 
@@ -1150,6 +1242,23 @@ function ConnectionReporter() {
                     />
                 )}
             </div>
+
+            {/* AI Components */}
+            <AIChat 
+                isOpen={isAIChatOpen} 
+                onClose={() => setIsAIChatOpen(false)} 
+            />
+            
+            {selectedAirdrop && (
+                <AirdropDetailsPopup
+                    isOpen={isAirdropPopupOpen}
+                    onClose={() => {
+                        setIsAirdropPopupOpen(false);
+                        setSelectedAirdrop(null);
+                    }}
+                    airdrop={selectedAirdrop}
+                />
+            )}
         </div>
     );
 };

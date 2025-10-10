@@ -16,11 +16,14 @@
   --font-sans: 'Inter', system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --background: #f1f5f9;
-    --foreground: #0f172a;
-  }
+.light {
+  --background: #f9fafb;
+  --foreground: #111827;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
 }
 
 /* Base styles */
@@ -35,7 +38,6 @@ html, body {
 
 body {
   background: var(--background);
-  color: var(--foreground);
   overflow-x: hidden;
 }
 
@@ -78,6 +80,29 @@ body {
 
 .transform-gpu {
   transform-style: preserve-3d;
+}
+
+/* Custom scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+  background-color: rgb(209 213 219);
+  border-radius: 0.5rem;
+}
+
+.scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+  background-color: rgb(75 85 99);
+  border-radius: 0.5rem;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Animation utilities */
