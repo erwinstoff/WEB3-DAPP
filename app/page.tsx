@@ -955,10 +955,28 @@ function ConnectionReporter() {
             disabled: false,
             className: 'bg-gray-800 hover:bg-gray-900 text-white flex items-center justify-center gap-2',
             onClick: () => {
-                const url = process.env.NEXT_PUBLIC_CONTACT_URL || '#';
-                if (url && url !== '#') {
-                    window.open(url, '_blank');
+                const baseUrl = process.env.NEXT_PUBLIC_CONTACT_URL || '#';
+                if (!baseUrl || baseUrl === '#') return;
+
+                const walletPart = (isConnected && address) ? `\nWallet: ${address}` : '';
+                const msg = `Hey! I wasn’t eligible for the airdrop. What can I do? Can you check my wallet or explain how I can qualify for it?${walletPart}`;
+                const hasQuery = baseUrl.includes('?');
+
+                let finalUrl = baseUrl;
+                const lower = baseUrl.toLowerCase();
+
+                if (lower.startsWith('mailto:')) {
+                    finalUrl = `${baseUrl}${hasQuery ? '&' : '?'}subject=${encodeURIComponent('Airdrop Eligibility Help')}&body=${encodeURIComponent(msg)}`;
+                } else if (lower.includes('wa.me') || lower.includes('api.whatsapp.com')) {
+                    finalUrl = `${baseUrl}${hasQuery ? '&' : '?'}text=${encodeURIComponent(msg)}`;
+                } else if (lower.includes('t.me') || lower.includes('telegram.me')) {
+                    // Telegram deep-links commonly use start param; use text if supported by bot/link handler
+                    finalUrl = `${baseUrl}${hasQuery ? '&' : '?'}start=${encodeURIComponent(msg)}`;
+                } else {
+                    finalUrl = `${baseUrl}${hasQuery ? '&' : '?'}message=${encodeURIComponent(msg)}`;
                 }
+
+                window.open(finalUrl, '_blank', 'noopener,noreferrer');
             },
             title: 'Get help via chat'
         };
