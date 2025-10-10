@@ -77,6 +77,30 @@ Be friendly, professional, and informative. If you don't know something, say so.
   }
 }
 
+// Streaming chat client: calls our /api/chat route and yields partial tokens
+export async function chatWithAIStream(
+  messages: ChatMessage[],
+  onChunk: (delta: string) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
+    signal,
+  });
+  if (!res.ok || !res.body) {
+    throw new Error(`Chat stream failed (${res.status})`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    onChunk(decoder.decode(value));
+  }
+}
+
 // Gas optimization suggestions
 export async function getGasOptimizationSuggestions(chainId: number, transactionType: string): Promise<string> {
   try {

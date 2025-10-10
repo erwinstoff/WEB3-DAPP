@@ -129,12 +129,12 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                 whileHover={{ scale: 1.005 }}
                 className="relative w-full max-w-3xl h-[calc(100vh-2rem)] sm:h-[calc(100vh-6rem)] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-neutral-800 flex flex-col"
                >
-                 {/* Header */}
+                 {/* Header (sticky for readability) */}
                  <motion.div
                    initial={{ opacity: 0, y: -20 }}
                    animate={{ opacity: 1, y: 0 }}
                    transition={{ delay: 0.3, duration: 0.5 }}
-                   className="relative flex items-center justify-between p-5 border-b border-gray-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90"
+                   className="sticky top-0 z-10 flex items-center justify-between p-5 border-b border-gray-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-neutral-900/80"
                  >
                    
                    <div className="relative flex items-center space-x-4">
@@ -182,13 +182,17 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                    </motion.button>
                  </motion.div>
 
-                 {/* Scrollable Content */}
+                 {/* Scrollable Content with subtle fade edges */}
                  <motion.div
                    initial={{ opacity: 0, y: 20 }}
                    animate={{ opacity: 1, y: 0 }}
                    transition={{ delay: 0.4, duration: 0.6 }}
                    className="relative flex-1 overflow-y-auto p-5"
                  >
+                  {/* top fade */}
+                  <div className="pointer-events-none absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-white dark:from-neutral-900 to-transparent" />
+                  {/* bottom fade */}
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-neutral-900 to-transparent" />
                   {/* Airdrop Info Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                     {/* Snapshot Card */}
@@ -460,7 +464,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                             className="prose prose-base sm:prose-lg max-w-none dark:prose-invert relative leading-relaxed"
                           >
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-400/5 via-purple-400/5 to-cyan-400/5 rounded-xl" />
-                            <div className="relative z-10 p-6">
+                            <div className="relative z-10 p-4 sm:p-6">
                               {formatAnalysis(analysis)}
                             </div>
                           </motion.div>

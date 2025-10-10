@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { chatWithAIStream, ChatMessage } from '@/lib/gemini';
+import { chatWithAI, ChatMessage } from '@/lib/gemini';
 
 interface AIChatProps {
   isOpen: boolean;
@@ -13,15 +13,13 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: '👋 Hello! I\'m your AI Web3 assistant. I can help you with questions about cryptocurrency, airdrops, DeFi, and blockchain technology. How can I assist you today?'
+      content: 'ðŸ‘‹ Hello! I\'m your AI Web3 assistant. I can help you with questions about cryptocurrency, airdrops, DeFi, and blockchain technology. How can I assist you today?'
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [streamingAssistant, setStreamingAssistant] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,43 +46,28 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
-    setStreamingAssistant('');
-    if (abortRef.current) abortRef.current.abort();
-    abortRef.current = new AbortController();
 
     try {
-      const history: ChatMessage[] = [...messages, userMessage];
-      await chatWithAIStream(
-        history,
-        (delta) => setStreamingAssistant(prev => prev + delta),
-        abortRef.current.signal
-      );
-      if (streamingAssistant) {
-        setMessages(prev => [...prev, { role: 'assistant', content: streamingAssistant }]);
-        setStreamingAssistant('');
-      }
+      const response = await chatWithAI(inputMessage.trim(), messages);
+      
+      // Simulate typing delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: response
+      };
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: ChatMessage = {
         role: 'assistant',
-        content: '😔 Sorry, I encountered an error. Please try again later.'
+        content: 'ðŸ˜” Sorry, I encountered an error. Please try again later.'
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const stopStreaming = () => {
-    if (abortRef.current) {
-      abortRef.current.abort();
-      abortRef.current = null;
-    }
-    if (streamingAssistant) {
-      setMessages(prev => [...prev, { role: 'assistant', content: streamingAssistant }]);
-      setStreamingAssistant('');
-    }
-    setIsLoading(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -95,14 +78,14 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
   };
 
   const quickQuestions = [
-    '🚀 What is an airdrop?',
-    '💰 How do I claim tokens?',
-    '🔒 Is this airdrop safe?',
-    '⛽ What are gas fees?',
-    '🔗 How do I connect my wallet?',
-    '📊 Explain DeFi protocols',
-    '🛡️ Wallet security tips',
-    '🌐 What is Web3?'
+    'ðŸš€ What is an airdrop?',
+    'ðŸ’° How do I claim tokens?',
+    'ðŸ”’ Is this airdrop safe?',
+    'â›½ What are gas fees?',
+    'ðŸ”— How do I connect my wallet?',
+    'ðŸ“Š Explain DeFi protocols',
+    'ðŸ›¡ï¸ Wallet security tips',
+    'ðŸŒ What is Web3?'
   ];
 
   return (
@@ -196,7 +179,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                 </motion.div>
               ))}
               
-              {(isLoading || streamingAssistant) && (
+              {isLoading && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -204,17 +187,28 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                 >
                   <div className="flex items-start space-x-2">
                     <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                      <span className="text-white text-xs">🤖</span>
+                      <span className="text-white text-xs">ðŸ¤–</span>
                     </div>
-                    <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl border border-gray-200 dark:border-gray-700 max-w-[90%] sm:max-w-[85%]">
-                      <p className="text-base leading-relaxed whitespace-pre-wrap">{streamingAssistant || 'Alex is typing…'}</p>
-                      <div className="flex items-center justify-between mt-2">
+                    <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center space-x-2">
                         <div className="flex space-x-1">
-                          <motion.div className="w-2 h-2 bg-blue-500 rounded-full" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} />
-                          <motion.div className="w-2 h-2 bg-purple-500 rounded-full" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }} />
-                          <motion.div className="w-2 h-2 bg-pink-500 rounded-full" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }} />
+                          <motion.div 
+                            className="w-2 h-2 bg-blue-500 rounded-full"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                          />
+                          <motion.div 
+                            className="w-2 h-2 bg-purple-500 rounded-full"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                          />
+                          <motion.div 
+                            className="w-2 h-2 bg-pink-500 rounded-full"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                          />
                         </div>
-                        <button onClick={stopStreaming} className="text-xs px-2 py-1 rounded bg-gray-200 dark:bg-gray-700">Stop</button>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">AI is thinking...</span>
                       </div>
                     </div>
                   </div>
@@ -231,7 +225,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                 animate={{ opacity: 1, y: 0 }}
                 className="px-4 pb-2"
               >
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">💡 Quick questions:</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">ðŸ’¡ Quick questions:</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {quickQuestions.map((question, index) => (
                     <motion.button
@@ -290,7 +284,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                 </motion.button>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                Press Enter to send • Shift+Enter for new line
+                Press Enter to send â€¢ Shift+Enter for new line
               </p>
             </div>
           </motion.div>
@@ -301,4 +295,5 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
 };
 
 export default AIChat;
+
 
