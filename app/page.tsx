@@ -1013,6 +1013,13 @@ function ConnectionReporter() {
                 backgroundColor: theme === 'dark' ? darkBackground : lightBackground
             }}
         >
+            {/* Top background fill */}
+            <div 
+                className="fixed top-0 left-0 w-full h-screen pointer-events-none z-0"
+                style={{ 
+                    backgroundColor: theme === 'dark' ? darkBackground : lightBackground
+                }}
+            />
             <style jsx global>{`
                 .perspective-1000 { perspective: 1000px; }
                 .transform-gpu { transform-style: preserve-3d; }
@@ -1284,11 +1291,16 @@ function ConnectionReporter() {
                 </div>
             </main>
 
-            <footer className="relative z-10 py-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm shadow-inner-xl shadow-gray-900/10 dark:shadow-blue-500/20 transition-colors duration-500">
+            <footer 
+                className="relative z-10 py-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-neutral-800 backdrop-blur-sm shadow-inner-xl shadow-gray-900/10 dark:shadow-blue-500/20 transition-colors duration-500"
+                style={{ 
+                    backgroundColor: theme === 'dark' ? darkBackground : lightBackground
+                }}
+            >
                 &copy; 2025 Protocol X. All Rights Reserved.
             </footer>
 
-            <div id="notificationContainer" className="fixed bottom-4 left-4 md:bottom-6 md:left-6 z-40 w-full max-w-[14rem] sm:max-w-xs flex flex-col items-start pointer-events-none p-3 md:p-0">
+            <div id="notificationContainer" className="fixed bottom-32 left-4 md:bottom-4 md:left-4 z-40 w-full max-w-[14rem] sm:max-w-xs flex flex-col items-start pointer-events-none p-3 md:p-0">
                 {currentNotification && (
                     <NotificationToast 
                         key={currentNotification.id} 

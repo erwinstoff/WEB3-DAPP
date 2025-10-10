@@ -184,7 +184,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
               stiffness: 100,
               duration: 0.4
             }}
-            className="fixed inset-x-3 bottom-3 sm:bottom-4 sm:right-4 sm:top-auto sm:left-auto w-auto max-w-md h-[68dvh] sm:h-[600px] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-neutral-800 z-50 flex flex-col"
+            className="fixed inset-x-3 bottom-3 sm:bottom-4 sm:right-4 sm:top-auto sm:left-auto w-auto max-w-md h-[75dvh] sm:h-[600px] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-neutral-800 z-50 flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-neutral-800 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-2xl">
@@ -216,7 +216,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Messages */}
-            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-32 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 pointer-events-auto">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-24 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
               {messages.map((message, index) => (
                 <motion.div
                   key={index}
@@ -279,32 +279,25 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Questions */}
+            {/* Quick Questions - Hidden on mobile */}
             {messages.length === 1 && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="sticky bottom-0 left-0 right-0 px-4 pb-3 pt-2 z-20 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md rounded-t-xl"
+                className="px-4 pb-2 hidden sm:block"
               >
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium">💡 Quick questions:</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pointer-events-auto">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">💡 Quick questions:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {quickQuestions.map((question, index) => (
                     <motion.button
                       key={index}
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setInputMessage(question);
-                        // send immediately so Alex replies, then the quick bar hides as messages length > 1
-                        setTimeout(() => { handleSendMessage(); }, 50);
-                      }}
-                      className="text-xs px-3 py-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900 dark:hover:to-purple-900 transition-all duration-300 border border-blue-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 text-left"
+                      onClick={() => setInputMessage(question)}
+                      className="text-sm px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900 dark:hover:to-purple-900 transition-all duration-300 border border-blue-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 text-left"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.04 }}
+                      transition={{ delay: index * 0.1 }}
                     >
                       {question}
                     </motion.button>

@@ -16,25 +16,15 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
   const [error, setError] = useState<string>('');
   const [isCached, setIsCached] = useState(false);
 
-  const memoKey = `${airdrop?.title || ''}-${airdrop?.snapshot || ''}-${airdrop?.eligibility || ''}`;
   const fetchAnalysis = useCallback(async () => {
     setIsLoading(true);
     setError('');
     setIsCached(false);
     
     try {
-      // Client-side memo to avoid repeated calls during a session
-      const cachedClient = sessionStorage.getItem(`analysis:${memoKey}`);
-      if (cachedClient) {
-        setAnalysis(cachedClient);
-        setIsCached(true);
-        setIsLoading(false);
-        return;
-      }
-
       // Add timeout to prevent infinite loading
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       const response = await fetch('/api/airdrop-explainer', {
         method: 'POST',
@@ -62,7 +52,6 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
 
       setAnalysis(data.explanation);
       setIsCached(data.cached || false);
-      try { sessionStorage.setItem(`analysis:${memoKey}`, data.explanation); } catch {}
     } catch (err) {
       console.error('Error analyzing airdrop:', err);
       
@@ -77,28 +66,10 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
       } else {
         setError('Failed to analyze airdrop. Please try again.');
       }
-      // Single retry after short backoff for transient failures
-      try {
-        await new Promise(r => setTimeout(r, 1200));
-        const res2 = await fetch('/api/airdrop-explainer', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ airdrop }),
-        });
-        if (res2.ok) {
-          const j2 = await res2.json();
-          if (j2?.success && j2?.explanation) {
-            setAnalysis(j2.explanation);
-            setIsCached(!!j2.cached);
-            try { sessionStorage.setItem(`analysis:${memoKey}`, j2.explanation); } catch {}
-            setError('');
-          }
-        }
-      } catch {}
     } finally {
       setIsLoading(false);
     }
-  }, [airdrop, memoKey]);
+  }, [airdrop]);
 
   useEffect(() => {
     if (isOpen && airdrop) {
@@ -107,22 +78,92 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
   }, [isOpen, airdrop, fetchAnalysis]);
 
   const formatAnalysis = (text: string) => {
-    // Split by common section headers and format
-    const sections = text.split(/(\d+\.\s*[A-Z][^.]*)/);
+    // Split by markdown headers and format
+    const sections = text.split(/(#{1,6}\s+.*)/);
     return sections.map((section, index) => {
-      if (section.match(/^\d+\.\s*[A-Z]/)) {
+      const trimmedSection = section.trim();
+      
+      // Handle markdown headers
+      if (trimmedSection.match(/^#{1,6}\s+/)) {
+        const level = trimmedSection.match(/^#+/)?.[0].length || 1;
+        const headerText = trimmedSection.replace(/^#+\s+/, '');
+        
+        const headerClasses = {
+          1: 'text-2xl font-bold text-gray-900 dark:text-white mt-6 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700',
+          2: 'text-xl font-bold text-blue-600 dark:text-blue-400 mt-5 mb-3',
+          3: 'text-lg font-semibold text-purple-600 dark:text-purple-400 mt-4 mb-2',
+          4: 'text-base font-semibold text-green-600 dark:text-green-400 mt-3 mb-2',
+          5: 'text-sm font-semibold text-orange-600 dark:text-orange-400 mt-3 mb-2',
+          6: 'text-sm font-medium text-gray-600 dark:text-gray-400 mt-2 mb-2'
+        };
+        
+        const HeaderTag = `h${level}` as keyof JSX.IntrinsicElements;
+        
         return (
-          <h4 key={index} className="font-semibold text-blue-600 dark:text-blue-400 mt-4 mb-2">
-            {section}
-          </h4>
+          <HeaderTag key={index} className={headerClasses[level as keyof typeof headerClasses]}>
+            {headerText}
+          </HeaderTag>
         );
       }
-      return (
-        <p key={index} className="text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
-          {section}
-        </p>
-      );
-    });
+      
+      // Handle bullet points
+      if (trimmedSection.match(/^[-*+]\s+/)) {
+        const items = trimmedSection.split('\n').filter(item => item.trim().match(/^[-*+]\s+/));
+        return (
+          <ul key={index} className="list-disc list-inside space-y-2 mb-4 text-gray-700 dark:text-gray-300">
+            {items.map((item, itemIndex) => (
+              <li key={itemIndex} className="leading-relaxed">
+                {item.replace(/^[-*+]\s+/, '')}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+      
+      // Handle numbered lists
+      if (trimmedSection.match(/^\d+\.\s+/)) {
+        const items = trimmedSection.split('\n').filter(item => item.trim().match(/^\d+\.\s+/));
+        return (
+          <ol key={index} className="list-decimal list-inside space-y-2 mb-4 text-gray-700 dark:text-gray-300">
+            {items.map((item, itemIndex) => (
+              <li key={itemIndex} className="leading-relaxed">
+                {item.replace(/^\d+\.\s+/, '')}
+              </li>
+            ))}
+          </ol>
+        );
+      }
+      
+      // Handle bold text
+      if (trimmedSection.includes('**')) {
+        const parts = trimmedSection.split(/(\*\*[^*]+\*\*)/);
+        return (
+          <p key={index} className="text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
+            {parts.map((part, partIndex) => {
+              if (part.match(/\*\*[^*]+\*\*/)) {
+                return (
+                  <strong key={partIndex} className="font-semibold text-gray-900 dark:text-white">
+                    {part.replace(/\*\*/g, '')}
+                  </strong>
+                );
+              }
+              return part;
+            })}
+          </p>
+        );
+      }
+      
+      // Regular paragraphs
+      if (trimmedSection.length > 0) {
+        return (
+          <p key={index} className="text-gray-700 dark:text-gray-300 mb-3 leading-relaxed text-base">
+            {trimmedSection}
+          </p>
+        );
+      }
+      
+      return null;
+    }).filter(Boolean);
   };
 
   return (
@@ -490,10 +531,10 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2, duration: 0.6 }}
-                          className="prose prose-sm sm:prose-base max-w-none dark:prose-invert relative leading-relaxed tracking-tight antialiased"
+                            className="relative leading-relaxed tracking-tight antialiased"
                           >
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-400/5 via-purple-400/5 to-cyan-400/5 rounded-xl" />
-                            <div className="relative z-10 p-4 sm:p-5">
+                            <div className="relative z-10 p-4 sm:p-6 space-y-4">
                               {formatAnalysis(analysis)}
                             </div>
                           </motion.div>

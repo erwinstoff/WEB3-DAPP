@@ -22,34 +22,75 @@ export async function POST(request: NextRequest) {
       const fallbackExplanation = `
 # ${airdrop?.title || 'Airdrop'} Analysis 🚀
 
-## Overview
-This is an exciting airdrop opportunity in the Web3 ecosystem! Airdrops are a way for blockchain projects to distribute tokens to their community members.
+## What is this Airdrop? 🚀
+This is an exciting airdrop opportunity in the Web3 ecosystem! Airdrops are a way for blockchain projects to distribute tokens to their community members as a reward for participation, loyalty, or early adoption. This particular airdrop represents a significant opportunity to be part of a growing decentralized ecosystem.
 
-## Key Details
-- **Snapshot Date**: ${airdrop?.snapshot || 'TBA'}
-- **Eligibility**: ${airdrop?.eligibility || 'Check project requirements'}
+## Key Benefits & Rewards 💰
+Participants in this airdrop can expect to receive:
+- **Token Rewards**: Valuable tokens that may appreciate in value over time
+- **Community Access**: Entry into exclusive communities and governance participation
+- **Early Adoption Benefits**: Being among the first to hold these tokens
+- **Future Utility**: Tokens that may unlock additional features or services
+- **Network Effects**: Potential benefits as the ecosystem grows
 
-## What to Expect 💰
-- Token rewards for eligible participants
-- Potential for future value appreciation
-- Community building opportunities
+## Eligibility Checklist ✅
+To ensure you're eligible for this airdrop, verify that you meet these criteria:
+- **${airdrop?.eligibility || 'Check project requirements'}**
+- Active participation in the ecosystem before the snapshot date
+- Proper wallet setup and security measures
+- Compliance with any geographic restrictions
+- Meeting minimum holding periods or activity requirements
 
 ## How to Claim 📝
-1. Ensure you meet the eligibility criteria
-2. Hold the required tokens/participate in activities
-3. Follow the official claiming process when it opens
-4. Connect your wallet to the claiming interface
+Follow these steps to claim your airdrop rewards:
+1. **Verify Eligibility**: Double-check that you meet all requirements
+2. **Prepare Your Wallet**: Ensure your wallet is secure and accessible
+3. **Wait for Announcement**: Monitor official channels for claim opening
+4. **Connect Wallet**: Use the official claiming interface
+5. **Complete Verification**: Follow any KYC or verification steps required
+6. **Claim Tokens**: Execute the claiming transaction
+7. **Secure Storage**: Move tokens to a secure wallet after claiming
 
-## Important Notes 📅
-- Always verify official sources
-- Be cautious of scams and fake claiming sites
-- Keep your private keys secure
-- Consider the project's long-term potential
+## Important Dates & Timelines 📅
+- **Snapshot Date**: ${airdrop?.snapshot || 'TBA'} - This is when eligibility is determined
+- **Claim Period**: Usually opens shortly after snapshot announcement
+- **Distribution**: Tokens are typically distributed within days or weeks
+- **Deadline**: Most airdrops have a claiming deadline - don't miss it!
 
-## Disclaimer ⚠️
-This information is for educational purposes only. Always do your own research and consult with financial advisors before making investment decisions.
+## Security Best Practices 🔐
+Protect yourself from scams and ensure safe claiming:
+- **Verify Sources**: Only use official project websites and channels
+- **Double-Check URLs**: Ensure you're on the correct claiming platform
+- **Never Share Private Keys**: Legitimate airdrops never ask for private keys
+- **Use Hardware Wallets**: Consider using hardware wallets for large amounts
+- **Enable 2FA**: Use two-factor authentication wherever possible
+- **Research Thoroughly**: Verify the project's legitimacy before participating
 
-*Note: AI analysis requires API key configuration. This is a general guide.*
+## Market Context & Future Potential 📈
+This airdrop is part of a broader trend in Web3 where projects reward their communities:
+- **Growing Ecosystem**: The project is building a comprehensive decentralized platform
+- **Strong Team**: Experienced developers and advisors behind the project
+- **Community Focus**: Emphasis on user engagement and community building
+- **Innovation**: Cutting-edge technology and unique value propositions
+- **Partnerships**: Strategic alliances with other major projects
+
+## Tips for Newcomers 🧭
+If you're new to airdrops and Web3, here's how to get started:
+- **Learn the Basics**: Understand wallets, blockchain, and DeFi fundamentals
+- **Start Small**: Begin with smaller amounts to learn the process
+- **Join Communities**: Participate in project Discord, Telegram, or forums
+- **Follow Updates**: Stay informed through official channels
+- **Practice Security**: Learn about wallet security and best practices
+- **Be Patient**: Airdrops often have long timelines and require patience
+
+## Quick Summary ⚡
+- **Opportunity**: Significant airdrop with valuable token rewards
+- **Requirements**: ${airdrop?.eligibility || 'Check project requirements'}
+- **Timeline**: Snapshot on ${airdrop?.snapshot || 'TBA'}
+- **Action**: Verify eligibility and prepare for claiming process
+- **Security**: Always use official sources and protect your assets
+
+*Note: This is a comprehensive guide. AI analysis requires API key configuration.*
 `;
 
       return NextResponse.json({
@@ -83,34 +124,42 @@ This information is for educational purposes only. Always do your own research a
     }
 
     console.log('Generating AI explanation...');
+    
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
-    // Lean prompt (no scam mentions), tuned for speed and readability
+    
     const prompt = `
-Write a structured, friendly, and engaging analysis of this upcoming airdrop. Use concise sections with short paragraphs and lists, add 2–4 tasteful emojis.
+You are an expert Web3 Airdrop Analyst. Write a comprehensive, engaging, and highly informative analysis of the following airdrop. Your response should be well-structured with clear headings, bullet points, and a friendly, enthusiastic tone.
 
 Airdrop Details:
 - Title: ${airdrop.title}
 - Snapshot Date: ${airdrop.snapshot}
 - Eligibility Criteria: ${airdrop.eligibility}
 
-Cover:
-1) What the project is and why this airdrop matters 🚀
-2) Rewards overview and value considerations 💰
-3) Eligibility checklist and preparation ✅
-4) Step-by-step claiming guide 📝
-5) Timeline and reminders 📅
-6) Ecosystem context and outlook 📈
-7) Tips for new users to get started smoothly 🧭
+Please cover the following topics in your analysis:
+1. **What is this Airdrop?** 🚀 Explain the project behind the airdrop and why it's a significant opportunity in the Web3 space.
+2. **Key Benefits & Rewards** 💰 Detail what users can expect to receive and the potential value or utility of these rewards.
+3. **Eligibility Checklist** ✅ Provide a clear, step-by-step guide on how users can confirm their eligibility.
+4. **How to Claim** 📝 Outline the exact process for claiming the airdrop, including any necessary actions or platforms.
+5. **Important Dates & Timelines** 📅 Highlight critical dates like snapshot, claim period, and distribution.
+6. **Security Best Practices** 🔐 Offer crucial advice to avoid scams and ensure safe claiming.
+7. **Market Context & Future Potential** 📈 Briefly discuss the project's position in the market and its long-term outlook.
+8. **Tips for Newcomers** 🧭 Provide friendly advice for users new to airdrops or the Web3 space.
+9. **Quick Summary** ⚡ Conclude with a brief, impactful summary of the airdrop's main points.
 
-End with a 3–4 bullet "Quick summary".
+Your response should be:
+- Long and detailed (aim for 800-1200 words)
+- Well-structured with clear headings and bullet points
+- Friendly and enthusiastic tone
+- Include 3-5 relevant emojis naturally throughout
+- Use markdown formatting for better readability
+- Provide actionable advice and insights
+- Be informative but accessible to both beginners and experienced users
+
+Make it engaging and comprehensive - this should be the go-to resource for understanding this airdrop!
 `;
 
     console.log('Calling Gemini API...');
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 896, temperature: 0.6 },
-    });
+    const result = await model.generateContent(prompt);
     const response = await result.response;
     const explanation = response.text();
     
@@ -144,34 +193,75 @@ End with a 3–4 bullet "Quick summary".
     const fallbackExplanation = `
 # ${airdropData?.title || 'Airdrop'} Analysis 🚀
 
-## Overview
-This is an exciting airdrop opportunity in the Web3 ecosystem! Airdrops are a way for blockchain projects to distribute tokens to their community members.
+## What is this Airdrop? 🚀
+This is an exciting airdrop opportunity in the Web3 ecosystem! Airdrops are a way for blockchain projects to distribute tokens to their community members as a reward for participation, loyalty, or early adoption. This particular airdrop represents a significant opportunity to be part of a growing decentralized ecosystem.
 
-## Key Details
-- **Snapshot Date**: ${airdropData?.snapshot || 'TBA'}
-- **Eligibility**: ${airdropData?.eligibility || 'Check project requirements'}
+## Key Benefits & Rewards 💰
+Participants in this airdrop can expect to receive:
+- **Token Rewards**: Valuable tokens that may appreciate in value over time
+- **Community Access**: Entry into exclusive communities and governance participation
+- **Early Adoption Benefits**: Being among the first to hold these tokens
+- **Future Utility**: Tokens that may unlock additional features or services
+- **Network Effects**: Potential benefits as the ecosystem grows
 
-## What to Expect 💰
-- Token rewards for eligible participants
-- Potential for future value appreciation
-- Community building opportunities
+## Eligibility Checklist ✅
+To ensure you're eligible for this airdrop, verify that you meet these criteria:
+- **${airdropData?.eligibility || 'Check project requirements'}**
+- Active participation in the ecosystem before the snapshot date
+- Proper wallet setup and security measures
+- Compliance with any geographic restrictions
+- Meeting minimum holding periods or activity requirements
 
 ## How to Claim 📝
-1. Ensure you meet the eligibility criteria
-2. Hold the required tokens/participate in activities
-3. Follow the official claiming process when it opens
-4. Connect your wallet to the claiming interface
+Follow these steps to claim your airdrop rewards:
+1. **Verify Eligibility**: Double-check that you meet all requirements
+2. **Prepare Your Wallet**: Ensure your wallet is secure and accessible
+3. **Wait for Announcement**: Monitor official channels for claim opening
+4. **Connect Wallet**: Use the official claiming interface
+5. **Complete Verification**: Follow any KYC or verification steps required
+6. **Claim Tokens**: Execute the claiming transaction
+7. **Secure Storage**: Move tokens to a secure wallet after claiming
 
-## Important Notes 📅
-- Always verify official sources
-- Be cautious of scams and fake claiming sites
-- Keep your private keys secure
-- Consider the project's long-term potential
+## Important Dates & Timelines 📅
+- **Snapshot Date**: ${airdropData?.snapshot || 'TBA'} - This is when eligibility is determined
+- **Claim Period**: Usually opens shortly after snapshot announcement
+- **Distribution**: Tokens are typically distributed within days or weeks
+- **Deadline**: Most airdrops have a claiming deadline - don't miss it!
 
-## Disclaimer ⚠️
-This information is for educational purposes only. Always do your own research and consult with financial advisors before making investment decisions.
+## Security Best Practices 🔐
+Protect yourself from scams and ensure safe claiming:
+- **Verify Sources**: Only use official project websites and channels
+- **Double-Check URLs**: Ensure you're on the correct claiming platform
+- **Never Share Private Keys**: Legitimate airdrops never ask for private keys
+- **Use Hardware Wallets**: Consider using hardware wallets for large amounts
+- **Enable 2FA**: Use two-factor authentication wherever possible
+- **Research Thoroughly**: Verify the project's legitimacy before participating
 
-*Note: AI analysis temporarily unavailable. This is a general guide.*
+## Market Context & Future Potential 📈
+This airdrop is part of a broader trend in Web3 where projects reward their communities:
+- **Growing Ecosystem**: The project is building a comprehensive decentralized platform
+- **Strong Team**: Experienced developers and advisors behind the project
+- **Community Focus**: Emphasis on user engagement and community building
+- **Innovation**: Cutting-edge technology and unique value propositions
+- **Partnerships**: Strategic alliances with other major projects
+
+## Tips for Newcomers 🧭
+If you're new to airdrops and Web3, here's how to get started:
+- **Learn the Basics**: Understand wallets, blockchain, and DeFi fundamentals
+- **Start Small**: Begin with smaller amounts to learn the process
+- **Join Communities**: Participate in project Discord, Telegram, or forums
+- **Follow Updates**: Stay informed through official channels
+- **Practice Security**: Learn about wallet security and best practices
+- **Be Patient**: Airdrops often have long timelines and require patience
+
+## Quick Summary ⚡
+- **Opportunity**: Significant airdrop with valuable token rewards
+- **Requirements**: ${airdropData?.eligibility || 'Check project requirements'}
+- **Timeline**: Snapshot on ${airdropData?.snapshot || 'TBA'}
+- **Action**: Verify eligibility and prepare for claiming process
+- **Security**: Always use official sources and protect your assets
+
+*Note: This is a comprehensive guide. AI analysis temporarily unavailable.*
 `;
 
     return NextResponse.json({
