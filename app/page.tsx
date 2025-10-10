@@ -432,6 +432,15 @@ function ConnectionReporter() {
             await open();
         } catch (err) {
             console.error('[Connect] Error opening modal:', err);
+            
+            // Check if it's a MetaMask extension error
+            if (err instanceof Error && err.message.includes('MetaMask extension not found')) {
+                showMessage('MetaMask extension not found. Please install MetaMask to continue.', 'error');
+            } else if (err instanceof Error && err.message.includes('User rejected')) {
+                showMessage('Connection cancelled by user.', 'info');
+            } else {
+                showMessage('Failed to connect wallet. Please try again.', 'error');
+            }
         }
     }, [open, showMessage]);
 
@@ -1028,20 +1037,6 @@ function ConnectionReporter() {
                     </div>
 
                     <div className="flex items-center space-x-3">
-                        <button 
-                            onClick={() => setIsAIChatOpen(true)}
-                            className="p-2 rounded-full transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 relative group"
-                            aria-label="Open AI Assistant"
-                        >
-                            <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                                <span className="text-white font-bold text-xs">AI</span>
-                            </div>
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                AI Assistant
-                            </div>
-                        </button>
-                        
                         <button onClick={toggleTheme} className="p-2 rounded-full transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Toggle theme">
                             <Icon 
                                 name={theme === 'dark' ? 'sun' : 'moon'} 
@@ -1053,19 +1048,36 @@ function ConnectionReporter() {
                             />
                         </button>
                         
-                        <motion.button 
-                            onClick={() => isConnected ? disconnectWallet() : connectWallet()}
-                            whileHover={{ scale: 1.05, boxShadow: '0 5px 10px rgba(0, 0, 0, 0.3)' }}
-                            whileTap={{ scale: 0.95 }}
-                            className={`font-semibold py-2 px-4 rounded-full shadow-md transition-all duration-300 transform flex items-center space-x-2 text-sm
-                                ${isConnected 
-                                    ? 'bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600' 
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white font-bold'
-                                }`}
-                        >
-                            <Icon name="wallet" className="w-5 h-5" color={isConnected ? walletIconColor : 'white'} />
-                            <span id="walletConnectText">{formattedAddress}</span>
-                        </motion.button>
+                        <div className="relative group">
+                            <motion.button 
+                                onClick={() => isConnected ? disconnectWallet() : connectWallet()}
+                                whileHover={{ scale: 1.05, boxShadow: '0 5px 10px rgba(0, 0, 0, 0.3)' }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`font-semibold py-2 px-4 rounded-full shadow-md transition-all duration-300 transform flex items-center space-x-2 text-sm
+                                    ${isConnected 
+                                        ? 'bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600' 
+                                        : 'bg-blue-600 hover:bg-blue-700 text-white font-bold'
+                                    }`}
+                            >
+                                <Icon name="wallet" className="w-5 h-5" color={isConnected ? walletIconColor : 'white'} />
+                                <span id="walletConnectText">{formattedAddress}</span>
+                            </motion.button>
+                            
+                            {/* MetaMask Installation Hint */}
+                            {!isConnected && (
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                                    Need MetaMask? 
+                                    <a 
+                                        href="https://metamask.io/download/" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-blue-400 hover:text-blue-300 underline ml-1"
+                                    >
+                                        Install here
+                                    </a>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>
@@ -1240,6 +1252,33 @@ function ConnectionReporter() {
                     />
                 )}
             </div>
+
+            {/* Floating AI Chat Button */}
+            <motion.button
+                onClick={() => setIsAIChatOpen(true)}
+                className="fixed bottom-6 right-6 z-40 p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1, type: "spring", stiffness: 200 }}
+                aria-label="Ask Alex - AI Assistant"
+            >
+                <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                        <span className="text-blue-500 font-bold text-sm">AI</span>
+                    </div>
+                    <span className="text-white font-semibold text-sm hidden sm:block">Ask Alex</span>
+                </div>
+                
+                {/* Pulse indicator */}
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                
+                {/* Tooltip */}
+                <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Ask Alex anything about airdrops!
+                </div>
+            </motion.button>
 
             {/* AI Components */}
             <AIChat 

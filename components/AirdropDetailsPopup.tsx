@@ -120,152 +120,77 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
               stiffness: 100,
               duration: 0.4
             }}
-            className="fixed inset-4 md:inset-8 lg:inset-16 z-50 flex flex-col max-w-4xl mx-auto perspective-1000 overflow-y-auto"
-            style={{ transformStyle: 'preserve-3d' }}
+            className="fixed inset-0 sm:inset-6 lg:inset-16 z-50 flex items-center justify-center"
           >
             {/* 3D Container with Multiple Layers */}
             <div className="relative w-full h-full">
-              {/* Background Glow Layer */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.8 }}
-                className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-cyan-500/20 rounded-2xl blur-3xl"
-                style={{ transform: 'translateZ(-50px)' }}
-              />
-              
-              {/* Main Container */}
-              <motion.div
-                whileHover={{ 
-                  rotateY: 2,
-                  rotateX: 1,
-                  scale: 1.02,
-                  transition: { duration: 0.3 }
-                }}
-                className="relative w-full h-full bg-gradient-to-br from-white via-gray-50 to-blue-50/30 dark:from-neutral-900 dark:via-neutral-800 dark:to-blue-900/30 rounded-2xl shadow-[0_25px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_25px_50px_rgba(0,0,0,0.5)] border border-gray-200/50 dark:border-neutral-700/50 backdrop-blur-xl overflow-hidden"
-                style={{ 
-                  transformStyle: 'preserve-3d',
-                  boxShadow: '0 25px 50px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.2)'
-                }}
-              >
-                {/* Animated Background Pattern */}
-                <div className="absolute inset-0 opacity-5 dark:opacity-10">
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 animate-pulse" />
-                  <div className="absolute top-10 left-10 w-32 h-32 bg-blue-400 rounded-full blur-3xl animate-float" />
-                  <div className="absolute bottom-10 right-10 w-40 h-40 bg-purple-400 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-                  <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-cyan-400 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-                </div>
-
-                {/* Floating Particles */}
-                <div className="absolute inset-0 overflow-hidden">
-                  {[...Array(20)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute w-1 h-1 bg-blue-400 rounded-full"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                      }}
-                      animate={{
-                        y: [0, -20, 0],
-                        opacity: [0, 1, 0],
-                        scale: [0, 1, 0],
-                      }}
-                      transition={{
-                        duration: 3 + Math.random() * 2,
-                        repeat: Infinity,
-                        delay: Math.random() * 2,
-                      }}
-                    />
-                  ))}
-                </div>
-                {/* Header */}
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.5 }}
-                  className="relative flex items-center justify-between p-6 border-b border-gray-200/30 dark:border-neutral-700/30 backdrop-blur-sm"
-                  style={{ transform: 'translateZ(10px)' }}
-                >
-                  {/* Header Background Glow */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-cyan-500/5" />
-                  
-                  <div className="relative flex items-center space-x-4">
-                    {/* 3D AI Icon */}
-                    <motion.div
-                      whileHover={{ 
-                        rotateY: 180,
-                        scale: 1.1,
-                        transition: { duration: 0.6 }
-                      }}
+               {/* Main Container */}
+               <motion.div
+                whileHover={{ scale: 1.005 }}
+                className="relative w-full max-w-3xl h-[calc(100vh-2rem)] sm:h-[calc(100vh-6rem)] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-neutral-800 flex flex-col"
+               >
+                 {/* Header */}
+                 <motion.div
+                   initial={{ opacity: 0, y: -20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: 0.3, duration: 0.5 }}
+                   className="relative flex items-center justify-between p-5 border-b border-gray-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90"
+                 >
+                   
+                   <div className="relative flex items-center space-x-4">
+                     {/* 3D AI Icon */}
+                     <motion.div
+                      whileHover={{ scale: 1.05 }}
                       className="relative"
-                    >
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-xl shadow-[0_8px_25px_rgba(59,130,246,0.4)] flex items-center justify-center relative overflow-hidden">
-                        {/* Inner Glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl" />
-                        {/* Icon Content */}
-                        <span className="text-white font-black text-lg relative z-10">AI</span>
-                        {/* Animated Ring */}
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                          className="absolute inset-0 border-2 border-white/30 rounded-xl"
-                        />
+                     >
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                        <span className="text-white font-black text-sm">AI</span>
                       </div>
-                      {/* Shadow Layer */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl blur-lg opacity-30 -z-10" />
-                    </motion.div>
-                    
-                    <div className="relative">
-                      <motion.h2 
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4, duration: 0.5 }}
-                        className="text-2xl font-extrabold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent"
-                      >
-                        {airdrop.title}
-                      </motion.h2>
-                      <motion.p 
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.5, duration: 0.5 }}
-                        className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center space-x-2"
-                      >
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                        <span>AI-Powered Analysis</span>
-                      </motion.p>
-                    </div>
-                  </div>
-                  
-                  {/* 3D Close Button */}
-                  <motion.button
-                    whileHover={{ 
-                      scale: 1.1,
-                      rotate: 90,
-                      transition: { duration: 0.2 }
-                    }}
+                     </motion.div>
+                     
+                     <div className="relative">
+                       <motion.h2 
+                         initial={{ opacity: 0, x: -20 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         transition={{ delay: 0.4, duration: 0.5 }}
+                         className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white"
+                       >
+                         {airdrop.title}
+                       </motion.h2>
+                       <motion.p 
+                         initial={{ opacity: 0, x: -20 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         transition={{ delay: 0.5, duration: 0.5 }}
+                         className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center space-x-2"
+                       >
+                         <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                         <span>AI-Powered Analysis</span>
+                       </motion.p>
+                     </div>
+                   </div>
+                   
+                   {/* 3D Close Button */}
+                   <motion.button
+                    whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={onClose}
-                    className="relative p-3 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-xl transition-all duration-200 backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30"
-                    style={{ transform: 'translateZ(5px)' }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-700/50 rounded-xl" />
-                    <svg className="w-6 h-6 text-gray-600 dark:text-gray-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                   >
+                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                  </motion.button>
-                </motion.div>
+                   </motion.button>
+                 </motion.div>
 
-                {/* Content */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.6 }}
-                  className="relative flex-1 overflow-y-auto p-6"
-                  style={{ transform: 'translateZ(5px)' }}
-                >
+                 {/* Scrollable Content */}
+                 <motion.div
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: 0.4, duration: 0.6 }}
+                   className="relative flex-1 overflow-y-auto p-5"
+                 >
                   {/* Airdrop Info Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                     {/* Snapshot Card */}
                     <motion.div
                       initial={{ opacity: 0, y: 30, rotateX: -10 }}
@@ -532,7 +457,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2, duration: 0.6 }}
-                            className="prose prose-sm max-w-none dark:prose-invert relative"
+                            className="prose prose-base sm:prose-lg max-w-none dark:prose-invert relative leading-relaxed"
                           >
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-400/5 via-purple-400/5 to-cyan-400/5 rounded-xl" />
                             <div className="relative z-10 p-6">
