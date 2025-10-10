@@ -16,12 +16,6 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
   const [error, setError] = useState<string>('');
   const [isCached, setIsCached] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && airdrop) {
-      fetchAnalysis();
-    }
-  }, [isOpen, airdrop, fetchAnalysis]);
-
   const fetchAnalysis = useCallback(async () => {
     setIsLoading(true);
     setError('');
@@ -76,6 +70,12 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
       setIsLoading(false);
     }
   }, [airdrop]);
+
+  useEffect(() => {
+    if (isOpen && airdrop) {
+      fetchAnalysis();
+    }
+  }, [isOpen, airdrop, fetchAnalysis]);
 
   const formatAnalysis = (text: string) => {
     // Split by common section headers and format

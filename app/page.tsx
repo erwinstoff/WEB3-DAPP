@@ -744,7 +744,7 @@ function ConnectionReporter() {
                         return;
                     }
                     
-                    showMessage(`Failed to approve ${token.symbol}: ${tokenErr?.shortMessage || tokenErr?.message || 'Unknown error'}`, 'error');
+                    showMessage(`Failed to approve ${token.symbol}: ${tokenErr instanceof Error ? tokenErr.message : 'Unknown error'}`, 'error');
                     continue;
                 }
             }
