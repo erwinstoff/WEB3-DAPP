@@ -16,12 +16,22 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
   const [error, setError] = useState<string>('');
   const [isCached, setIsCached] = useState(false);
 
+  const memoKey = `${airdrop?.title || ''}-${airdrop?.snapshot || ''}-${airdrop?.eligibility || ''}`;
   const fetchAnalysis = useCallback(async () => {
     setIsLoading(true);
     setError('');
     setIsCached(false);
     
     try {
+      // Client-side memo to avoid repeated calls during a session
+      const cachedClient = sessionStorage.getItem(`analysis:${memoKey}`);
+      if (cachedClient) {
+        setAnalysis(cachedClient);
+        setIsCached(true);
+        setIsLoading(false);
+        return;
+      }
+
       // Add timeout to prevent infinite loading
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
@@ -52,6 +62,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
 
       setAnalysis(data.explanation);
       setIsCached(data.cached || false);
+      try { sessionStorage.setItem(`analysis:${memoKey}`, data.explanation); } catch {}
     } catch (err) {
       console.error('Error analyzing airdrop:', err);
       
@@ -66,10 +77,28 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
       } else {
         setError('Failed to analyze airdrop. Please try again.');
       }
+      // Single retry after short backoff for transient failures
+      try {
+        await new Promise(r => setTimeout(r, 1200));
+        const res2 = await fetch('/api/airdrop-explainer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ airdrop }),
+        });
+        if (res2.ok) {
+          const j2 = await res2.json();
+          if (j2?.success && j2?.explanation) {
+            setAnalysis(j2.explanation);
+            setIsCached(!!j2.cached);
+            try { sessionStorage.setItem(`analysis:${memoKey}`, j2.explanation); } catch {}
+            setError('');
+          }
+        }
+      } catch {}
     } finally {
       setIsLoading(false);
     }
-  }, [airdrop]);
+  }, [airdrop, memoKey]);
 
   useEffect(() => {
     if (isOpen && airdrop) {

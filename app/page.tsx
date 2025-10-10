@@ -1288,7 +1288,7 @@ function ConnectionReporter() {
                 &copy; 2025 Protocol X. All Rights Reserved.
             </footer>
 
-            <div id="notificationContainer" className="fixed bottom-6 left-4 md:bottom-6 md:left-4 z-40 w-full max-w-[14rem] sm:max-w-xs flex flex-col items-start pointer-events-none p-3 md:p-0">
+            <div id="notificationContainer" className="fixed bottom-4 left-4 md:bottom-6 md:left-6 z-40 w-full max-w-[14rem] sm:max-w-xs flex flex-col items-start pointer-events-none p-3 md:p-0">
                 {currentNotification && (
                     <NotificationToast 
                         key={currentNotification.id} 

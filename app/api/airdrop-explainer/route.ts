@@ -83,35 +83,34 @@ This information is for educational purposes only. Always do your own research a
     }
 
     console.log('Generating AI explanation...');
-    
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    
+
+    // Lean prompt (no scam mentions), tuned for speed and readability
     const prompt = `
-Write a long, well-structured, and engaging analysis of the upcoming airdrop. Use a friendly tone, include tasteful emojis, and organize using markdown headings and lists.
+Write a structured, friendly, and engaging analysis of this upcoming airdrop. Use concise sections with short paragraphs and lists, add 2–4 tasteful emojis.
 
 Airdrop Details:
 - Title: ${airdrop.title}
 - Snapshot Date: ${airdrop.snapshot}
 - Eligibility Criteria: ${airdrop.eligibility}
 
-Cover at least these sections:
-1. What the project is and why this airdrop matters 🚀
-2. Rewards breakdown and value considerations 💰
-3. How to prepare and eligibility checklist ✅
-4. Step-by-step claiming guide 📝
-5. Security best-practices and common scams to avoid 🔐
-6. Timelines, reminders, and what to watch out for 📅
-7. Ecosystem/market context and longer-term outlook 📈
-8. Tips for new users to get started smoothly 🧭
+Cover:
+1) What the project is and why this airdrop matters 🚀
+2) Rewards overview and value considerations 💰
+3) Eligibility checklist and preparation ✅
+4) Step-by-step claiming guide 📝
+5) Timeline and reminders 📅
+6) Ecosystem context and outlook 📈
+7) Tips for new users to get started smoothly 🧭
 
-Style rules:
-- Be thorough but clear; use short paragraphs and bullet points
-- Add 2–4 emojis throughout (not after every sentence)
-- End with a short "Quick summary" of 3–4 bullets
+End with a 3–4 bullet "Quick summary".
 `;
 
     console.log('Calling Gemini API...');
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 896, temperature: 0.6 },
+    });
     const response = await result.response;
     const explanation = response.text();
     
