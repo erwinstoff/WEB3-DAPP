@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useAccount, useWriteContract, useDisconnect } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
@@ -215,11 +216,13 @@ const MediaContainer: React.FC<MediaContainerProps> = ({ mediaState, isConnected
         <div className="p-4">
             <div className={`rounded-xl aspect-square w-full mx-auto transition-all duration-500 bg-white dark:bg-gray-900/80 shadow-xl overflow-hidden relative`}>
                 {/* Image (always present, opacity controlled) */}
-                <img 
-                    src={CARD_IMAGE} 
-                    alt="Airdrop Parachute Icon" 
-                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isVideoActive ? 'opacity-0' : 'opacity-100'}`}
-                    onError={handleImageError}
+                <Image 
+                    src={CARD_IMAGE}
+                    alt="Airdrop Parachute Icon"
+                    fill
+                    className={`object-cover transition-opacity duration-500 ${isVideoActive ? 'opacity-0' : 'opacity-100'}`}
+                    onError={() => {}}
+                    priority
                 />
                 
                 {/* Video (always present, opacity controlled) */}
@@ -1234,37 +1237,45 @@ function ConnectionReporter() {
                         <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-6 transition-opacity duration-500">
                             
                             <div className="flex items-center space-x-3 group">
-                                <img 
+                                <Image 
                                     src="/metamask-icon.svg" 
                                     alt="MetaMask" 
-                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300"
+                                    width={36}
+                                    height={36}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300" 
                                 />
                                 <span className="text-base sm:text-lg font-bold text-gray-500 dark:text-gray-400 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors duration-300 hidden sm:block">MetaMask</span>
                             </div>
                             
                             <div className="flex items-center space-x-3 group">
-                                <img 
+                                <Image 
                                     src="/Uniswap_icon_pink.svg" 
                                     alt="Uniswap" 
-                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300"
+                                    width={36}
+                                    height={36}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300" 
                                 />
                                 <span className="text-base sm:text-lg font-bold text-gray-500 dark:text-gray-400 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors duration-300 hidden sm:block">Uniswap</span>
                             </div>
 
                             <div className="flex items-center space-x-3 group">
-                                <img 
+                                <Image 
                                     src="/binance.svg" 
                                     alt="Binance" 
-                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300"
+                                    width={36}
+                                    height={36}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300" 
                                 />
                                 <span className="text-base sm:text-lg font-bold text-gray-500 dark:text-gray-400 group-hover:text-yellow-500 dark:group-hover:text-yellow-400 transition-colors duration-300 hidden sm:block">Binance</span>
                             </div>
                             
                             <div className="flex items-center space-x-3 group">
-                                <img 
+                                <Image 
                                     src="/solana.svg" 
                                     alt="Solana" 
-                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300"
+                                    width={36}
+                                    height={36}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 object-contain group-hover:scale-110 transition-all duration-300" 
                                 />
                                 <span className="text-base sm:text-lg font-bold text-gray-500 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-500 transition-colors duration-300 hidden sm:block">Solana</span>
                             </div>
@@ -1367,8 +1378,16 @@ const NewsTicker: React.FC<{ theme: Theme }> = ({ theme }) => {
                     style={{ minWidth: '100%' }}
                 >
                     {items.map((t, i) => (
-                        <span key={i} className={`mx-6 text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                            {t}
+                        <span
+                          key={i}
+                          className={`mx-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm hover:shadow-md transition-transform duration-200 hover:-translate-y-0.5 ${theme === 'dark' ? 'bg-neutral-900/70 border-neutral-700 text-gray-200' : 'bg-white/70 border-gray-200 text-gray-700'}`}
+                          style={{ backdropFilter: 'blur(6px)' }}
+                        >
+                          <span className="relative inline-flex items-center justify-center">
+                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></span>
+                            <span className="absolute inline-flex w-3.5 h-3.5 rounded-full animate-ping-slow bg-blue-500/40"></span>
+                          </span>
+                          <span className="font-medium text-[0.8rem] sm:text-sm whitespace-nowrap">{t}</span>
                         </span>
                     ))}
                 </div>
@@ -1377,8 +1396,16 @@ const NewsTicker: React.FC<{ theme: Theme }> = ({ theme }) => {
                     style={{ minWidth: '100%' }}
                 >
                     {items.map((t, i) => (
-                        <span key={`dup-${i}`} className={`mx-6 text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                            {t}
+                        <span
+                          key={`dup-${i}`}
+                          className={`mx-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm hover:shadow-md transition-transform duration-200 hover:-translate-y-0.5 ${theme === 'dark' ? 'bg-neutral-900/70 border-neutral-700 text-gray-200' : 'bg-white/70 border-gray-200 text-gray-700'}`}
+                          style={{ backdropFilter: 'blur(6px)' }}
+                        >
+                          <span className="relative inline-flex items-center justify-center">
+                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></span>
+                            <span className="absolute inline-flex w-3.5 h-3.5 rounded-full animate-ping-slow bg-purple-500/40"></span>
+                          </span>
+                          <span className="font-medium text-[0.8rem] sm:text-sm whitespace-nowrap">{t}</span>
                         </span>
                     ))}
                 </div>
@@ -1399,6 +1426,12 @@ const NewsTicker: React.FC<{ theme: Theme }> = ({ theme }) => {
                 @media (prefers-reduced-motion: reduce) {
                   .animate-marquee { animation: none; }
                 }
+                @keyframes ping-slow { 
+                  0% { transform: scale(0.9); opacity: 0.6; } 
+                  70% { transform: scale(1.6); opacity: 0; } 
+                  100% { transform: scale(1.6); opacity: 0; }
+                }
+                .animate-ping-slow { animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
             `}</style>
         </div>
     );
