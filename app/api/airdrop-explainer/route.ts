@@ -132,7 +132,7 @@ Use a friendly, enthusiastic tone with natural emojis. Make it sound exciting an
     try {
       const body = await request.json();
       airdropData = body.airdrop;
-    } catch (parseError) {
+    } catch {
       console.warn('Could not parse request body in error handler');
     }
     

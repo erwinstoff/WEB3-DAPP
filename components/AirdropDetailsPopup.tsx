@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AirdropDetails } from '@/lib/gemini';
 
@@ -20,9 +20,9 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
     if (isOpen && airdrop) {
       fetchAnalysis();
     }
-  }, [isOpen, airdrop]);
+  }, [isOpen, airdrop, fetchAnalysis]);
 
-  const fetchAnalysis = async () => {
+  const fetchAnalysis = useCallback(async () => {
     setIsLoading(true);
     setError('');
     setIsCached(false);
@@ -75,7 +75,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [airdrop]);
 
   const formatAnalysis = (text: string) => {
     // Split by common section headers and format

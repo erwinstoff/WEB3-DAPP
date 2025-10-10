@@ -18,7 +18,6 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -47,7 +46,6 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
-    setIsTyping(true);
 
     try {
       const response = await chatWithAI(inputMessage.trim(), messages);
@@ -69,7 +67,6 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-      setIsTyping(false);
     }
   };
 
