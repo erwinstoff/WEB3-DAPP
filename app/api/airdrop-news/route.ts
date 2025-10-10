@@ -23,6 +23,12 @@ export async function GET() {
 
   // Helper: try multiple endpoints until one returns data
   type NewsApiArticle = { title?: string; source?: { name?: string } };
+  type NewsApiResponse = { articles?: NewsApiArticle[] };
+  const isNewsApiResponse = (value: unknown): value is NewsApiResponse => {
+    if (typeof value !== 'object' || value === null) return false;
+    const v = value as { articles?: unknown };
+    return Array.isArray(v.articles);
+  };
 
   const tryEndpoints = async (): Promise<{ items: string[]; source: string }> => {
     // NewsAPI routes only
@@ -38,7 +44,7 @@ export async function GET() {
         });
         if (!res.ok) continue;
         const json: unknown = await res.json();
-        const articles: NewsApiArticle[] = Array.isArray((json as any)?.articles) ? (json as any).articles : [];
+        const articles: NewsApiArticle[] = isNewsApiResponse(json) && json.articles ? json.articles : [];
         const items = articles.slice(0, 10).map((a: NewsApiArticle) => {
           const title = typeof a?.title === 'string' ? a.title : '';
           const site = typeof a?.source?.name === 'string' ? a.source.name : '';

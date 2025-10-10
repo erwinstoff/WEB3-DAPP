@@ -90,7 +90,7 @@ ${airdropContext ? `Project Context (authoritative):\n${airdropContext}\n` : ''}
         'Cache-Control': 'no-store',
       },
     });
-  } catch (e) {
+  } catch {
     return new Response('Chat error', { status: 500 });
   }
 }

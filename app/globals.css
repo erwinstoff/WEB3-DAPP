@@ -62,7 +62,7 @@ body {
 
 /* Hide scrollbar line on mobile (iOS/Android) */
 @media (hover: none) and (pointer: coarse) {
-  html, body {
+html, body {
     scrollbar-width: none; /* Firefox */
   }
   ::-webkit-scrollbar {

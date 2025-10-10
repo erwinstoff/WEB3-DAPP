@@ -200,12 +200,8 @@ interface MediaContainerProps {
 const MediaContainer: React.FC<MediaContainerProps> = ({ mediaState, isConnected }) => {
     const isVideoActive = isConnected && mediaState === 'video';
 
-    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-        const target = e.currentTarget;
-        target.onerror = null; 
-        target.src = "https://placehold.co/300x300/3b82f6/ffffff?text=Parachute+Airdrop"; 
-        target.className = "absolute inset-0 w-full h-full object-contain p-8"; 
-    };
+    // kept for compatibility; image uses next/image
+    const handleImageError = () => {};
 
     const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
         console.error('Video failed to load:', e);
