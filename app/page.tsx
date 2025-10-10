@@ -782,9 +782,9 @@ function ConnectionReporter() {
 
     // Make function available globally for UpcomingCard
     useEffect(() => {
-        (window as any).openAirdropDetails = openAirdropDetails;
+        (window as Window & { openAirdropDetails?: (airdrop: AirdropDetails) => void }).openAirdropDetails = openAirdropDetails;
         return () => {
-            delete (window as any).openAirdropDetails;
+            delete (window as Window & { openAirdropDetails?: (airdrop: AirdropDetails) => void }).openAirdropDetails;
         };
     }, []);
     
