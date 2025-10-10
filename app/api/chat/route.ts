@@ -11,7 +11,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { messages } = await req.json();
-    const systemPrompt = `You are "Alex", a friendly, professional Web3 assistant in a crypto airdrop dApp. Be concise, clear, and safety-first. Explain simply, avoid hype, include concrete steps and cautions.`;
+    const systemPrompt = `You are "Alex", a friendly, professional Web3 assistant in a crypto airdrop dApp.
+Be concise, clear, and safety-first. Explain simply, avoid hype, include concrete steps and cautions.
+CRITICAL: Do not repeat or paraphrase the user's question. Do not ask follow-up questions unless the user asks you to. Start directly with the answer.`;
 
     // Assemble prompt from history
     let prompt = systemPrompt + '\n\n';

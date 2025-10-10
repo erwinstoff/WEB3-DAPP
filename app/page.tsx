@@ -1016,12 +1016,12 @@ function ConnectionReporter() {
                     : 'bg-white/95 border-gray-200'
             }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 min-w-0">
                         <div className="relative">
                             <Icon name="gem" className="w-7 h-7" color={primaryAccent} />
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-sm opacity-30 animate-pulse"></div>
                         </div>
-                        <span className="text-2xl font-extrabold tracking-wide relative">
+                        <span className="text-xl sm:text-2xl font-extrabold tracking-wide relative max-w-[45vw] overflow-hidden text-ellipsis whitespace-nowrap">
                             <span className={`bg-gradient-to-r bg-clip-text text-transparent ${
                                 theme === 'dark' 
                                     ? 'from-gray-200 via-gray-100 to-gray-200' 
@@ -1029,14 +1029,14 @@ function ConnectionReporter() {
                             }`}>
                                 Protocol
                             </span>
-                            <span className="ml-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 bg-clip-text text-transparent font-black text-3xl">
+                            <span className="ml-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 bg-clip-text text-transparent font-black text-2xl sm:text-3xl">
                                 X
                             </span>
                             <span className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full animate-pulse"></span>
                         </span>
                     </div>
 
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 flex-shrink-0">
                         <button onClick={toggleTheme} className="p-2 rounded-full transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Toggle theme">
                             <Icon 
                                 name={theme === 'dark' ? 'sun' : 'moon'} 
@@ -1053,14 +1053,14 @@ function ConnectionReporter() {
                                 onClick={() => isConnected ? disconnectWallet() : connectWallet()}
                                 whileHover={{ scale: 1.05, boxShadow: '0 5px 10px rgba(0, 0, 0, 0.3)' }}
                                 whileTap={{ scale: 0.95 }}
-                                className={`font-semibold py-2 px-4 rounded-full shadow-md transition-all duration-300 transform flex items-center space-x-2 text-sm
+                                className={`font-semibold py-2 px-4 rounded-full shadow-md transition-all duration-300 transform flex items-center space-x-2 text-sm whitespace-nowrap
                                     ${isConnected 
                                         ? 'bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600' 
                                         : 'bg-blue-600 hover:bg-blue-700 text-white font-bold'
                                     }`}
                             >
                                 <Icon name="wallet" className="w-5 h-5" color={isConnected ? walletIconColor : 'white'} />
-                                <span id="walletConnectText">{formattedAddress}</span>
+                                <span id="walletConnectText" className="max-w-[38vw] sm:max-w-none overflow-hidden text-ellipsis whitespace-nowrap">{formattedAddress}</span>
                             </motion.button>
                             
                             {/* MetaMask Installation Hint */}

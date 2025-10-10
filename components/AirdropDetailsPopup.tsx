@@ -194,7 +194,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                   {/* bottom fade */}
                   <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-neutral-900 to-transparent" />
                   {/* Airdrop Info Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-6">
                     {/* Snapshot Card */}
                     <motion.div
                       initial={{ opacity: 0, y: 30, rotateX: -10 }}
@@ -209,7 +209,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                       className="relative group"
                       style={{ transform: 'translateZ(20px)' }}
                     >
-                      <div className="relative bg-gradient-to-br from-blue-50 via-blue-100/50 to-cyan-50 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-cyan-900/30 p-6 rounded-2xl border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm overflow-hidden">
+                      <div className="relative bg-gradient-to-br from-blue-50 via-blue-100/40 to-cyan-50 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-cyan-900/30 p-3 sm:p-4 rounded-xl border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm overflow-hidden">
                         {/* Card Glow */}
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-cyan-400/10 rounded-2xl" />
                         {/* Animated Border */}
@@ -221,15 +221,15 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                         />
                         {/* Content */}
                         <div className="relative z-10">
-                          <div className="flex items-center space-x-2 mb-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-md flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                             </div>
-                            <h3 className="font-bold text-blue-800 dark:text-blue-200">Snapshot Date</h3>
+                            <h3 className="font-semibold text-sm text-blue-800 dark:text-blue-200">Snapshot Date</h3>
                           </div>
-                          <p className="text-blue-700 dark:text-blue-300 font-medium">{airdrop.snapshot}</p>
+                          <p className="text-blue-700 dark:text-blue-300 text-sm font-medium">{airdrop.snapshot}</p>
                         </div>
                       </div>
                     </motion.div>
@@ -248,7 +248,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                       className="relative group"
                       style={{ transform: 'translateZ(20px)' }}
                     >
-                      <div className="relative bg-gradient-to-br from-green-50 via-emerald-100/50 to-teal-50 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 p-6 rounded-2xl border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm overflow-hidden">
+                      <div className="relative bg-gradient-to-br from-green-50 via-emerald-100/40 to-teal-50 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 p-3 sm:p-4 rounded-xl border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm overflow-hidden">
                         {/* Card Glow */}
                         <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 to-emerald-400/10 rounded-2xl" />
                         {/* Animated Border */}
@@ -260,15 +260,15 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                         />
                         {/* Content */}
                         <div className="relative z-10">
-                          <div className="flex items-center space-x-2 mb-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-500 rounded-md flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </div>
-                            <h3 className="font-bold text-green-800 dark:text-green-200">Eligibility</h3>
+                            <h3 className="font-semibold text-sm text-green-800 dark:text-green-200">Eligibility</h3>
                           </div>
-                          <p className="text-green-700 dark:text-green-300 font-medium">{airdrop.eligibility}</p>
+                          <p className="text-green-700 dark:text-green-300 text-sm font-medium">{airdrop.eligibility}</p>
                         </div>
                       </div>
                     </motion.div>
@@ -287,7 +287,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                       className="relative group"
                       style={{ transform: 'translateZ(20px)' }}
                     >
-                      <div className="relative bg-gradient-to-br from-purple-50 via-violet-100/50 to-indigo-50 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-indigo-900/30 p-6 rounded-2xl border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm overflow-hidden">
+                      <div className="relative bg-gradient-to-br from-purple-50 via-violet-100/40 to-indigo-50 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-indigo-900/30 p-3 sm:p-4 rounded-xl border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm overflow-hidden">
                         {/* Card Glow */}
                         <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-violet-400/10 rounded-2xl" />
                         {/* Animated Border */}
@@ -299,17 +299,17 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                         />
                         {/* Content */}
                         <div className="relative z-10">
-                          <div className="flex items-center space-x-2 mb-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg flex items-center justify-center">
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-violet-500 rounded-md flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                               </svg>
                             </div>
-                            <h3 className="font-bold text-purple-800 dark:text-purple-200">Status</h3>
+                            <h3 className="font-semibold text-sm text-purple-800 dark:text-purple-200">Status</h3>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-                            <p className="text-purple-700 dark:text-purple-300 font-medium">Upcoming</p>
+                            <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse" />
+                            <p className="text-purple-700 dark:text-purple-300 text-sm font-medium">Upcoming</p>
                           </div>
                         </div>
                       </div>
@@ -324,7 +324,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                     className="relative"
                     style={{ transform: 'translateZ(15px)' }}
                   >
-                    <div className="relative bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-800/80 dark:via-blue-900/20 dark:to-purple-900/20 rounded-2xl p-8 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm overflow-hidden">
+                    <div className="relative bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-800/80 dark:via-blue-900/20 dark:to-purple-900/20 rounded-2xl p-5 sm:p-6 border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm overflow-hidden">
                       {/* Analysis Background Glow */}
                       <div className="absolute inset-0 bg-gradient-to-br from-blue-400/5 via-purple-400/5 to-cyan-400/5 rounded-2xl" />
                       
@@ -337,7 +337,7 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.9, duration: 0.5 }}
-                          className="flex items-center space-x-3 mb-6"
+                          className="flex items-center space-x-3 mb-4 sm:mb-5"
                         >
                           {/* 3D AI Icon */}
                           <motion.div
@@ -461,10 +461,10 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2, duration: 0.6 }}
-                            className="prose prose-base sm:prose-lg max-w-none dark:prose-invert relative leading-relaxed"
+                          className="prose prose-sm sm:prose-base max-w-none dark:prose-invert relative leading-relaxed tracking-tight antialiased"
                           >
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-400/5 via-purple-400/5 to-cyan-400/5 rounded-xl" />
-                            <div className="relative z-10 p-4 sm:p-6">
+                            <div className="relative z-10 p-4 sm:p-5">
                               {formatAnalysis(analysis)}
                             </div>
                           </motion.div>
