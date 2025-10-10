@@ -23,7 +23,7 @@ export default async function RootLayout({
   const cookies = headersObj.get('cookie')
 
   return (
-    <html lang="en">
+    <html lang="en" className="min-h-screen">
       <head>
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f9fafb" />
@@ -31,7 +31,7 @@ export default async function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-[var(--background)] text-[var(--foreground)]`}>
         <ContextProvider cookies={cookies}>{children}</ContextProvider>
       </body>
     </html>

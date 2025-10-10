@@ -216,7 +216,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Messages */}
-            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-24 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-28 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 pointer-events-auto">
               {messages.map((message, index) => (
                 <motion.div
                   key={index}
@@ -284,14 +284,15 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="px-4 pb-2"
+                className="px-4 pb-2 relative z-10"
               >
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">💡 Quick questions:</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {quickQuestions.map((question, index) => (
                     <motion.button
                       key={index}
-                      onClick={() => setInputMessage(question)}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setInputMessage(question); }}
                       className="text-sm px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900 dark:hover:to-purple-900 transition-all duration-300 border border-blue-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 text-left"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
