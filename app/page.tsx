@@ -1,15 +1,16 @@
-'use client';
+ 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAccount, useWriteContract, useDisconnect } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 import { erc20Abi, maxUint256, createPublicClient, http } from 'viem';
 import { readContract, getBalance, switchChain } from '@wagmi/core';
 import { config } from '@/config';
 import { mainnet, arbitrum, sepolia } from 'wagmi/chains';
-import AIChat from '@/components/AIChat';
+import ChatUI, { type Message as ChatUIMessage } from '@/components/ChatUI';
+import { chatWithAIStream, type ChatMessage as GeminiChatMessage } from '@/lib/gemini';
 import AirdropDetailsPopup from '@/components/AirdropDetailsPopup';
 import { AirdropDetails } from '@/lib/gemini';
 
@@ -380,6 +381,10 @@ const App: React.FC = () => {
     const [currentNotification, setCurrentNotification] = useState<Notification | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState<boolean>(false);
+    const [chatMessages, setChatMessages] = useState<ChatUIMessage[]>([]);
+    const [isAssistantTyping, setIsAssistantTyping] = useState<boolean>(false);
+    const [isSendingChat, setIsSendingChat] = useState<boolean>(false);
+    const chatAbortRef = useRef<AbortController | null>(null);
     const [selectedAirdrop, setSelectedAirdrop] = useState<AirdropDetails | null>(null);
     const [isAirdropPopupOpen, setIsAirdropPopupOpen] = useState<boolean>(false);
 
@@ -423,6 +428,37 @@ function ConnectionReporter() {
         }
         localStorage.setItem('theme', theme);
     }, [theme]);
+
+    // --- Chat: onSend handler wired to streaming API (UI-first, optional backend) ---
+    const handleChatSend = useCallback(async (text: string) => {
+        if (!text.trim() || isSendingChat) return;
+        setIsSendingChat(true);
+        const userMsg: ChatUIMessage = { id: Math.random().toString(36).substr(2, 9), role: 'user', text: text.trim(), createdAt: new Date().toLocaleTimeString() };
+        setChatMessages(prev => [...prev, userMsg]);
+
+        // Prepare assistant placeholder to stream into
+        const assistantId = Math.random().toString(36).substr(2, 9);
+        setIsAssistantTyping(true);
+        setChatMessages(prev => [...prev, { id: assistantId, role: 'assistant', text: '', createdAt: new Date().toLocaleTimeString() }]);
+
+        // Build history for backend
+        const history: GeminiChatMessage[] = [...chatMessages, userMsg].map(m => ({ role: m.role, content: m.text }));
+
+        const abort = new AbortController();
+        chatAbortRef.current = abort;
+        try {
+            await chatWithAIStream(history, (delta) => {
+                setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: (m.text || '') + delta } : m));
+            }, abort.signal);
+        } catch (e) {
+            // On error, show a brief message inside the assistant bubble
+            setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: m.text || 'Sorry, I had trouble replying. Please try again.' } : m));
+        } finally {
+            setIsAssistantTyping(false);
+            setIsSendingChat(false);
+            chatAbortRef.current = null;
+        }
+    }, [chatMessages, isSendingChat]);
 
     const showMessage = useCallback((text: string, type: MessageType = 'info') => {
         setMessage({ text, type });
@@ -1040,11 +1076,29 @@ function ConnectionReporter() {
                 backgroundColor: theme === 'dark' ? darkBackground : lightBackground
             }}
         >
-            {/* Top background fill */}
+            {/* Top safe area with header color */}
             <div 
-                className="fixed top-0 left-0 w-full h-screen pointer-events-none z-0"
+                className="fixed top-0 left-0 right-0 pointer-events-none z-20"
                 style={{ 
-                    backgroundColor: theme === 'dark' ? darkBackground : lightBackground
+                    height: 'env(safe-area-inset-top, 0px)',
+                    backgroundColor: theme === 'dark' ? 'rgba(23, 23, 23, 0.95)' : '#ffffff',
+                    backdropFilter: theme === 'dark' ? 'blur(8px)' : 'blur(8px)',
+                    WebkitBackdropFilter: theme === 'dark' ? 'blur(8px)' : 'blur(8px)'
+                }}
+            />
+            
+            {/* Full background fill with safe area coverage */}
+            <div 
+                className="fixed pointer-events-none z-0"
+                style={{ 
+                    backgroundColor: theme === 'dark' ? darkBackground : lightBackground,
+                    top: 'env(safe-area-inset-top, 0px)',
+                    left: '-100px',
+                    right: '-100px',
+                    bottom: '-100px',
+                    width: 'calc(100vw + 200px)',
+                    height: 'calc(100vh + 200px)',
+                    paddingBottom: 'env(safe-area-inset-bottom)'
                 }}
             />
             <style jsx global>{`
@@ -1372,10 +1426,66 @@ function ConnectionReporter() {
             </motion.button>
 
             {/* AI Components */}
-            <AIChat 
-                isOpen={isAIChatOpen} 
-                onClose={() => setIsAIChatOpen(false)} 
-            />
+            <AnimatePresence>
+                {isAIChatOpen && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
+                            onClick={() => setIsAIChatOpen(false)}
+                        />
+                        
+                        {/* Chat Container */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            className="fixed inset-0 sm:inset-x-8 sm:inset-y-16 sm:rounded-2xl z-50 overflow-hidden"
+                        >
+                            <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700 shadow-2xl">
+                                {/* Header */}
+                                <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-gradient-to-r from-blue-600 to-purple-600">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                            <span className="text-blue-600 font-bold text-lg">AI</span>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white">Ask Alex</h3>
+                                            <p className="text-sm text-blue-100">Your Web3 Assistant</p>
+                                        </div>
+                                    </div>
+                                    <motion.button
+                                        onClick={() => setIsAIChatOpen(false)}
+                                        className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                    >
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </motion.button>
+                                </div>
+                                
+                                {/* Chat Content */}
+                                <div className="h-[calc(100%-80px)]">
+                                    <ChatUI
+                                        messages={chatMessages}
+                                        isTyping={isAssistantTyping}
+                                        isSending={isSendingChat}
+                                        autoFocus
+                                        onSend={handleChatSend}
+                                        className="h-full"
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
             
             {selectedAirdrop && (
                 <AirdropDetailsPopup

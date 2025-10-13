@@ -37,14 +37,15 @@ const MobileKeyboard: React.FC<MobileKeyboardProps> = ({ onKeyPress, onBackspace
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`fixed bottom-0 left-0 right-0 z-50 p-4 border-t ${
+      className={`sticky bottom-0 left-0 right-0 z-50 p-4 border-t ${
         theme === 'dark' 
           ? 'bg-neutral-900 border-neutral-700' 
           : 'bg-white border-gray-200'
       }`}
       style={{ 
         paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.1)'
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+        position: 'sticky'
       }}
     >
       {/* Regular keyboard rows */}

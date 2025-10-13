@@ -61,6 +61,27 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
   // Detect mobile device
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
+  // Handle mobile viewport changes
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const handleViewportChange = () => {
+      // Force scroll to bottom when keyboard opens/closes
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    };
+
+    // Listen for viewport changes (keyboard open/close)
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', handleViewportChange);
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('orientationchange', handleViewportChange);
+    };
+  }, [isMobile]);
+
   const scrollToBottom = () => {
     const c = messagesContainerRef.current;
     if (c) {
@@ -294,7 +315,11 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
               stiffness: 100,
               duration: 0.4
             }}
-            className="fixed inset-x-3 bottom-3 sm:bottom-4 sm:right-4 sm:top-auto sm:left-auto w-auto max-w-md h-[75dvh] sm:h-[600px] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-neutral-800 z-50 flex flex-col"
+            className="fixed inset-x-3 bottom-3 sm:bottom-4 sm:right-4 sm:top-auto sm:left-auto w-auto max-w-md h-[calc(100dvh-2rem)] sm:h-[600px] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-neutral-800 z-50 flex flex-col"
+            style={{
+              maxHeight: 'calc(100dvh - 2rem)',
+              minHeight: '400px'
+            }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-neutral-800 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-2xl">
@@ -326,7 +351,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Messages */}
-            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-24 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600" style={{ paddingBottom: 'env(safe-area-inset-bottom, 1rem)' }}>
               {messages.map((message, index) => (
                 <motion.div
                   key={index}
@@ -417,7 +442,12 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
             )}
 
             {/* Input */}
-            <div className={`p-4 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 rounded-b-2xl ${showMobileKeyboard ? 'pb-0' : 'pb-[env(safe-area-inset-bottom)]'}`}>
+            <div 
+              className="sticky bottom-0 p-4 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 rounded-b-2xl"
+              style={{ 
+                paddingBottom: showMobileKeyboard ? '0' : 'calc(1rem + env(safe-area-inset-bottom))'
+              }}
+            >
               <div className="flex space-x-3">
                 <div className="flex-1 relative">
                   <input

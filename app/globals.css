@@ -6,7 +6,7 @@
 @import '@fontsource/inter/800.css';
 
 :root {
-  --background: #0f172a;
+  --background: #0A0A0A;
   --foreground: #f1f5f9;
 }
 
@@ -22,7 +22,7 @@
 }
 
 .dark {
-  --background: #0f172a;
+  --background: #0A0A0A;
   --foreground: #f1f5f9;
 }
 
@@ -34,11 +34,17 @@ html, body {
   font-family: 'Inter', system-ui, sans-serif;
   transition: background-color 0.5s ease, color 0.5s ease;
   scroll-behavior: smooth;
+  /* Safe area handling for iOS notch */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 body {
   background: var(--background);
   overflow-x: hidden;
+  /* Extend background to safe area */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
 }
 
 /* Custom scrollbar */
@@ -156,4 +162,50 @@ html, body {
 ::-moz-selection {
   background: rgba(59, 130, 246, 0.3);
   color: inherit;
+}
+
+/* Mobile keyboard handling */
+@media (max-width: 768px) {
+  /* Use dvh for mobile-safe viewport height */
+  .mobile-safe-height {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+  
+  /* Prevent zoom on input focus */
+  input[type="text"], input[type="email"], input[type="password"], textarea {
+    font-size: 16px !important;
+  }
+  
+  /* Smooth keyboard transitions */
+  .keyboard-aware {
+    transition: height 0.3s ease-in-out;
+  }
+  
+  /* Safe area handling for iOS */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Prevent body scroll when keyboard is open */
+  body.keyboard-open {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .ios-safe-height {
+    height: -webkit-fill-available;
+  }
+  
+  /* Fix for iOS Safari keyboard */
+  .ios-keyboard-fix {
+    position: sticky;
+    bottom: 0;
+    z-index: 1000;
+  }
 }
