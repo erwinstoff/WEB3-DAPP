@@ -1,5 +1,6 @@
 {
-  "name": "marne-web3",
+  "$schema": "http://json.schemastore.org/package",
+  "name": "dapp-web3",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,27 +14,27 @@
     "@google/generative-ai": "^0.24.1",
     "@reown/appkit": "^1.8.10",
     "@reown/appkit-adapter-wagmi": "^1.8.10",
-    "@tanstack/react-query": "^5.85.3",
+    "@tanstack/react-query": "^5.90.5",
     "@tanstack/react-query-devtools": "^5.90.2",
     "@vercel/og": "^0.8.5",
-    "@wagmi/core": "^2.21.2",
-    "framer-motion": "^12.23.22",
+    "@wagmi/core": "^2.22.1",
+    "framer-motion": "^12.23.24",
     "next": "15.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-markdown": "^10.1.0",
     "turbopack": "^0.0.1",
-    "viem": "^2.33.3",
-    "wagmi": "^2.16.3"
+    "viem": "^2.38.3",
+    "wagmi": "^2.18.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4.1.14",
+    "@types/node": "^20.19.22",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
     "eslint": "^9.37.0",
     "eslint-config-next": "15.5.4",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5.9.3"
   }
 }

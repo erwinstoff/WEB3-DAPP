@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
   webpack: config => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding')
     // Alias React Native AsyncStorage to a web shim to satisfy wallet deps
