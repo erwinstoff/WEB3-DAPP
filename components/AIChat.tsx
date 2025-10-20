@@ -375,7 +375,31 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
                       whileHover={{ scale: 1.01 }}
                       transition={{ type: "spring", stiffness: 300 }}
                     >
-                      <p className="text-[0.96rem] sm:text-base whitespace-pre-wrap">{message.content}</p>
+                      <div className="text-[0.96rem] sm:text-base whitespace-pre-wrap">
+                        {message.content.includes('[CONTACT_US_BUTTON]') ? (
+                          <>
+                            {message.content.split('[CONTACT_US_BUTTON]').map((part, i) => (
+                              <React.Fragment key={i}>
+                                {part}
+                                {i < message.content.split('[CONTACT_US_BUTTON]').length - 1 && (
+                                  <button
+                                    onClick={() => {
+                                        const contactUrl = process.env.NEXT_PUBLIC_CONTACT_URL || '#';
+                                        window.open(contactUrl, '_blank', 'noopener,noreferrer');
+                                    }}
+                                    className="inline-flex items-center gap-2 px-4 py-2 my-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 transition-all"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4-.8L3 20l.8-4A7.5 7.5 0 113 12" /></svg>
+                                    Contact Us
+                                  </button>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </>
+                        ) : (
+                          <p>{message.content}</p>
+                        )}
+                      </div>
                     </motion.div>
                     {message.role === 'user' && (
                       <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">

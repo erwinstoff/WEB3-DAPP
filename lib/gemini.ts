@@ -17,25 +17,41 @@ export interface ChatMessage {
 // AI-powered airdrop analysis
 export async function analyzeAirdrop(airdrop: AirdropDetails): Promise<string> {
   try {
-    const response = await fetch('/api/airdrop-explainer', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ airdrop }),
-    });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+    const prompt = `
+You are an expert Web3 Airdrop Analyst. Write a comprehensive, engaging, and highly informative analysis of the following airdrop. Your response should be well-structured with clear headings, bullet points, and a professional, analytical tone.
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+MANDATE: Conclude every response with a "Quick Summary" section consisting of 2-3 concise bullet points that state the most important actions or takeaways for the user.
 
-    const data = await response.json();
-    
-    if (!data.success) {
-      throw new Error(data.error || 'Failed to analyze airdrop');
-    }
+Airdrop Details:
+- Title: ${airdrop.title}
+- Snapshot Date: ${airdrop.snapshot}
+- Eligibility Criteria: ${airdrop.eligibility}
 
-    return data.explanation;
+Please cover the following topics in your analysis:
+1. **What is this Airdrop?** 🚀 Explain the project behind the airdrop and why it's a significant opportunity in the Web3 space.
+2. **Key Benefits & Rewards** 💰 Detail what users can expect to receive and the potential value or utility of these rewards.
+3. **Eligibility Checklist** ✅ Provide a clear, step-by-step guide on how users can confirm their eligibility.
+4. **How to Claim** 📝 Outline the exact process for claiming the airdrop, including any necessary actions or platforms.
+5. **Important Dates & Timelines** 📅 Highlight critical dates like snapshot, claim period, and distribution.
+6. **Market Context & Future Potential** 📈 Briefly discuss the project's position in the market and its long-term outlook.
+8. **Tips for Newcomers** 🧭 Provide friendly advice for users new to airdrops or the Web3 space.
+9. **Quick Summary** ⚡ Conclude with a brief, impactful summary of the airdrop's main points.
+
+Your response should be:
+- Long and detailed (aim for 800-1200 words)
+- Well-structured with clear headings and bullet points
+- Professional and analytical tone
+- Include 3-5 relevant emojis naturally throughout
+- Use markdown formatting for better readability
+- Provide actionable advice and insights
+- Be informative but accessible to both beginners and experienced users
+
+Make it engaging and comprehensive - this should be the go-to resource for understanding this airdrop!
+`;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
   } catch (error) {
     console.error('Error analyzing airdrop:', error);
     return 'Sorry, I encountered an error while analyzing this airdrop. Please try again later.';
@@ -45,18 +61,10 @@ export async function analyzeAirdrop(airdrop: AirdropDetails): Promise<string> {
 // AI chat assistant for general Web3 questions
 export async function chatWithAI(message: string, chatHistory: ChatMessage[] = []): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
     
-    const systemPrompt = `You are a helpful AI assistant specializing in Web3, cryptocurrency, and blockchain technology. You're integrated into a Web3 airdrop application. 
-
-Your role is to:
-- Answer questions about cryptocurrency, DeFi, and Web3
-- Help users understand airdrops and token claiming processes
-- Provide guidance on wallet connections and transactions
-- Explain blockchain concepts in simple terms
-- Offer security advice for crypto users
-
-Be friendly, professional, and informative. If you don't know something, say so. Always prioritize user security and best practices.`;
+  // Updated system prompt for professional and neutral tone without exposing internal AI identity
+  const systemPrompt = `You are a professional assistant dedicated to providing detailed explanations and interactive support. Respond in a formal tone and avoid any self-references that reveal internal implementation details.`;
 
     // Build conversation context
     let conversationContext = systemPrompt + '\n\n';
@@ -104,7 +112,7 @@ export async function chatWithAIStream(
 // Gas optimization suggestions
 export async function getGasOptimizationSuggestions(chainId: number, transactionType: string): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
     
     const chainNames: Record<number, string> = {
       1: 'Ethereum Mainnet',
@@ -131,7 +139,7 @@ Please provide:
 Keep the advice practical and actionable for users.
 `;
 
-    const result = await model.generateContent(prompt);
+      const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text();
   } catch (error) {

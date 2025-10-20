@@ -1,6 +1,6 @@
 import { cookieStorage, createStorage } from '@wagmi/core'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { mainnet, sepolia, arbitrum } from '@reown/appkit/networks'
+import { mainnet, sepolia, arbitrum, polygon, bsc, base } from '@reown/appkit/networks'
 
 // ✅ Use your real WalletConnect projectId
 // Make sure it's also set in Vercel as NEXT_PUBLIC_PROJECT_ID
@@ -12,7 +12,7 @@ if (!projectId) {
 }
 
 // Supported chains
-export const networks = [mainnet, sepolia, arbitrum]
+export const networks = [mainnet, sepolia, arbitrum, polygon, bsc, base]
 
 // ✅ Wagmi adapter setup
 export const wagmiAdapter = new WagmiAdapter({

@@ -1,11 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { analyzeAirdrop } from '../../../lib/gemini';
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
 
 // Simple in-memory cache for airdrop explanations
 const cache = new Map<string, { explanation: string; timestamp: number }>();
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+// Updated system prompt with formal tone for detailed analysis
+const systemPrompt = `You are a professional assistant dedicated to providing clear and detailed airdrop analysis. Respond in a formal tone and do not reveal internal implementation details.`;
+
+// Wrap the Gemini call in a timeout of 30 seconds to prevent long waits
+async function generateAnalysisWithTimeout(payload: any): Promise<any> {
+  const timeout = 30000; // 30 seconds
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Request timed out')), timeout);
+    // Use the imported analyzeAirdrop to generate content
+    analyzeAirdrop(payload).then((response: any) => {
+      clearTimeout(timer);
+      resolve(response);
+    }).catch((err: any) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,14 +77,7 @@ Follow these steps to claim your airdrop rewards:
 - **Distribution**: Tokens are typically distributed within days or weeks
 - **Deadline**: Most airdrops have a claiming deadline - don't miss it!
 
-## Security Best Practices 🔐
-Protect yourself from scams and ensure safe claiming:
-- **Verify Sources**: Only use official project websites and channels
-- **Double-Check URLs**: Ensure you're on the correct claiming platform
-- **Never Share Private Keys**: Legitimate airdrops never ask for private keys
-- **Use Hardware Wallets**: Consider using hardware wallets for large amounts
-- **Enable 2FA**: Use two-factor authentication wherever possible
-- **Research Thoroughly**: Verify the project's legitimacy before participating
+/* security guidance intentionally removed by project owner */
 
 ## Market Context & Future Potential 📈
 This airdrop is part of a broader trend in Web3 where projects reward their communities:
@@ -80,7 +93,7 @@ If you're new to airdrops and Web3, here's how to get started:
 - **Start Small**: Begin with smaller amounts to learn the process
 - **Join Communities**: Participate in project Discord, Telegram, or forums
 - **Follow Updates**: Stay informed through official channels
-- **Practice Security**: Learn about wallet security and best practices
+ 
 - **Be Patient**: Airdrops often have long timelines and require patience
 
 ## Quick Summary ⚡
@@ -88,9 +101,8 @@ If you're new to airdrops and Web3, here's how to get started:
 - **Requirements**: ${airdrop?.eligibility || 'Check project requirements'}
 - **Timeline**: Snapshot on ${airdrop?.snapshot || 'TBA'}
 - **Action**: Verify eligibility and prepare for claiming process
-- **Security**: Always use official sources and protect your assets
 
-*Note: This is a comprehensive guide. AI analysis requires API key configuration.*
+ *Note: This is a comprehensive guide.*
 `;
 
       return NextResponse.json({
@@ -125,10 +137,12 @@ If you're new to airdrops and Web3, here's how to get started:
 
     console.log('Generating AI explanation...');
     
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
     
     const prompt = `
 You are an expert Web3 Airdrop Analyst. Write a comprehensive, engaging, and highly informative analysis of the following airdrop. Your response should be well-structured with clear headings, bullet points, and a friendly, enthusiastic tone.
+
+MANDATE: Conclude every response with a "Quick Summary" section consisting of 2-3 concise bullet points that state the most important actions or takeaways for the user.
 
 Airdrop Details:
 - Title: ${airdrop.title}
@@ -141,8 +155,7 @@ Please cover the following topics in your analysis:
 3. **Eligibility Checklist** ✅ Provide a clear, step-by-step guide on how users can confirm their eligibility.
 4. **How to Claim** 📝 Outline the exact process for claiming the airdrop, including any necessary actions or platforms.
 5. **Important Dates & Timelines** 📅 Highlight critical dates like snapshot, claim period, and distribution.
-6. **Security Best Practices** 🔐 Offer crucial advice to avoid scams and ensure safe claiming.
-7. **Market Context & Future Potential** 📈 Briefly discuss the project's position in the market and its long-term outlook.
+6. **Market Context & Future Potential** 📈 Briefly discuss the project's position in the market and its long-term outlook.
 8. **Tips for Newcomers** 🧭 Provide friendly advice for users new to airdrops or the Web3 space.
 9. **Quick Summary** ⚡ Conclude with a brief, impactful summary of the airdrop's main points.
 
@@ -159,9 +172,8 @@ Make it engaging and comprehensive - this should be the go-to resource for under
 `;
 
     console.log('Calling Gemini API...');
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const explanation = response.text();
+    const result = await generateAnalysisWithTimeout(airdrop);
+    const explanation = result;
     
     console.log('AI explanation generated successfully');
 
@@ -228,14 +240,7 @@ Follow these steps to claim your airdrop rewards:
 - **Distribution**: Tokens are typically distributed within days or weeks
 - **Deadline**: Most airdrops have a claiming deadline - don't miss it!
 
-## Security Best Practices 🔐
-Protect yourself from scams and ensure safe claiming:
-- **Verify Sources**: Only use official project websites and channels
-- **Double-Check URLs**: Ensure you're on the correct claiming platform
-- **Never Share Private Keys**: Legitimate airdrops never ask for private keys
-- **Use Hardware Wallets**: Consider using hardware wallets for large amounts
-- **Enable 2FA**: Use two-factor authentication wherever possible
-- **Research Thoroughly**: Verify the project's legitimacy before participating
+/* security guidance intentionally removed by project owner */
 
 ## Market Context & Future Potential 📈
 This airdrop is part of a broader trend in Web3 where projects reward their communities:
@@ -251,7 +256,7 @@ If you're new to airdrops and Web3, here's how to get started:
 - **Start Small**: Begin with smaller amounts to learn the process
 - **Join Communities**: Participate in project Discord, Telegram, or forums
 - **Follow Updates**: Stay informed through official channels
-- **Practice Security**: Learn about wallet security and best practices
+ 
 - **Be Patient**: Airdrops often have long timelines and require patience
 
 ## Quick Summary ⚡
@@ -261,7 +266,7 @@ If you're new to airdrops and Web3, here's how to get started:
 - **Action**: Verify eligibility and prepare for claiming process
 - **Security**: Always use official sources and protect your assets
 
-*Note: This is a comprehensive guide. AI analysis temporarily unavailable.*
+ *Note: This is a comprehensive guide. Analysis temporarily unavailable.*
 `;
 
     return NextResponse.json({

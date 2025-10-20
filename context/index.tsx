@@ -3,7 +3,7 @@
 import { wagmiAdapter, projectId } from '@/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createAppKit, useAppKit } from '@reown/appkit/react'
-import { mainnet, arbitrum, sepolia } from '@reown/appkit/networks'
+import { mainnet, arbitrum, sepolia, polygon, bsc, base } from '@reown/appkit/networks'
 import React, { type ReactNode, useState, useEffect } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
 
@@ -34,7 +34,7 @@ function AppKitProvider({ children }: { children: ReactNode }) {
         createAppKit({
           adapters: [wagmiAdapter],
           projectId: projectId as string,
-          networks: [mainnet, sepolia, arbitrum],
+          networks: [mainnet, sepolia, arbitrum, polygon, bsc, base],
           defaultNetwork: mainnet,
           metadata,
           features: {

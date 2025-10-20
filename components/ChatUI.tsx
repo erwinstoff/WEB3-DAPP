@@ -202,7 +202,29 @@ const ChatUI: React.FC<ChatUIProps> = ({
                 <div className="px-4 py-3 leading-relaxed tracking-tight whitespace-pre-wrap">
                   {m.role === 'assistant' ? (
                     <div className="text-gray-100">
-                      <MarkdownRenderer>{m.text}</MarkdownRenderer>
+                      {m.text.includes('[CONTACT_US_BUTTON]') ? (
+                        <>
+                          {m.text.split('[CONTACT_US_BUTTON]').map((part, i) => (
+                            <React.Fragment key={i}>
+                              <MarkdownRenderer>{part}</MarkdownRenderer>
+                              {i < m.text.split('[CONTACT_US_BUTTON]').length - 1 && (
+                                <button
+                                  onClick={() => {
+                                      const contactUrl = process.env.NEXT_PUBLIC_CONTACT_URL || '#';
+                                      window.open(contactUrl, '_blank', 'noopener,noreferrer');
+                                  }}
+                                  className="inline-flex items-center gap-2 px-4 py-2 my-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 transition-all"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4-.8L3 20l.8-4A7.5 7.5 0 113 12" /></svg>
+                                  Contact Us
+                                </button>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </>
+                      ) : (
+                        <MarkdownRenderer>{m.text}</MarkdownRenderer>
+                      )}
                     </div>
                   ) : (
                     <span className="text-white font-medium">{m.text}</span>
