@@ -55,7 +55,7 @@ ${airdropContext || 'No specific airdrop details are available at the moment. Fo
 **Response Guidelines:**
 - Be friendly, professional, and concise.
 - Do not reveal that you are an AI model or mention "internal details".
-- When asked for help or contact, always include \`[CONTACT_US_BUTTON]\`.`;
+- When asked for help or contact, always include \`[CONTACT_US]\`.`;
 
     // Assemble prompt from history
     let prompt = systemPrompt + '\n\n';

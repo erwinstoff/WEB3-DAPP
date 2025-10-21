@@ -1,30 +1,112 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { analyzeAirdrop } from '../../../lib/gemini';
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
+// Prefer a server-only key if available (safer). Fall back to NEXT_PUBLIC_ if necessary.
+const API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
 // Simple in-memory cache for airdrop explanations
 const cache = new Map<string, { explanation: string; timestamp: number }>();
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-// Updated system prompt with formal tone for detailed analysis
-const systemPrompt = `You are a professional assistant dedicated to providing clear and detailed airdrop analysis. Respond in a formal tone and do not reveal internal implementation details.`;
+// AI-powered airdrop analysis function
+async function analyzeAirdrop(airdrop: { title: string; snapshot: string; eligibility: string; }): Promise<string> {
+  // Add robust validation
+  if (!airdrop || !airdrop.title || !airdrop.snapshot || !airdrop.eligibility) {
+    const errorMessage = `Invalid or incomplete airdrop data received. Data: ${JSON.stringify(airdrop)}`;
+    console.error(errorMessage);
+    throw new Error(errorMessage);
+  }
 
-// Wrap the Gemini call in a timeout of 30 seconds to prevent long waits
-async function generateAnalysisWithTimeout(payload: any): Promise<any> {
-  const timeout = 30000; // 30 seconds
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Request timed out')), timeout);
-    // Use the imported analyzeAirdrop to generate content
-    analyzeAirdrop(payload).then((response: any) => {
-      clearTimeout(timer);
-      resolve(response);
-    }).catch((err: any) => {
-      clearTimeout(timer);
-      reject(err);
-    });
-  });
+  const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+    throw new Error("Missing or invalid Gemini API key.");
+  }
+
+  try {
+    console.log(`[airdrop-explainer] Starting analysis for airdrop: "${airdrop.title}"`);
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+
+    const prompt = `
+      You are a professional Web3 analyst providing clear, insightful analysis for airdrop opportunities. Your goal is to help users understand the value and requirements of this airdrop in a straightforward, professional manner.
+
+      Your Approach:
+      - Tone: Professional, confident, and user-friendly. Avoid excessive enthusiasm or emojis.
+      - Style: Write like a senior analyst at a reputable Web3 firm - knowledgeable but accessible.
+      - Structure: Use clear headings and organized information that's easy to scan and understand.
+      - Uniqueness: Provide genuine insights, not generic templates. Each analysis should feel tailored.
+      - Focus: Emphasize legitimate opportunities, community benefits, and professional development.
+
+      Airdrop Information:
+      - Project: ${airdrop.title}
+      - Snapshot Date: ${airdrop.snapshot}
+      - Eligibility: ${airdrop.eligibility}
+
+      Create a comprehensive analysis with this structure:
+
+      ## Overview
+      Provide a clear, concise explanation of what this airdrop is and why it matters. Focus on the project's value proposition and what makes this opportunity significant for community members.
+
+      ## Token Distribution
+      Explain what participants can expect to receive, including:
+      - Token allocation details and community benefits
+      - Governance rights or utility features
+      - Long-term value potential and ecosystem participation
+      - Additional perks and community access
+
+      ## Eligibility Requirements
+      Break down the eligibility criteria clearly:
+      - Specific requirements participants must meet
+      - Timeline considerations and preparation steps
+      - Geographic or regulatory compliance
+      - Technical prerequisites and wallet setup
+
+      ## How to Participate
+      Provide a step-by-step guide for claiming:
+      1. Pre-claim preparation and verification steps
+      2. Wallet setup and security best practices
+      3. Claiming process walkthrough
+      4. Post-claim recommendations and token management
+
+      ## Timeline & Important Dates
+      Highlight key dates and deadlines:
+      - Snapshot date significance and preparation
+      - Claim window duration and availability
+      - Distribution timeline and expectations
+      - Any critical deadlines to remember
+
+      ## Market Analysis
+      Provide professional insights on:
+      - Project fundamentals and development team
+      - Market positioning and competitive advantages
+      - Long-term growth potential and ecosystem development
+      - Community engagement and adoption trends
+
+      ## Key Takeaways
+      Summarize the most important points users need to know:
+      - Primary opportunity highlights and benefits
+      - Critical requirements and preparation steps
+      - Recommended actions and next steps
+      - Important considerations for participation
+
+      Important Guidelines:
+      - Focus on legitimate opportunities and community benefits
+      - Emphasize professional development and ecosystem growth
+      - Avoid any language that could be interpreted as promoting risky or questionable activities
+      - Maintain a positive, professional tone throughout
+      - Highlight the value of community participation and governance
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    console.log(`[airdrop-explainer] Successfully generated analysis for "${airdrop.title}"`);
+    return text;
+  } catch (error) {
+    console.error(`[airdrop-explainer] Error during analysis for "${airdrop.title}":`, error);
+    // Re-throw a more informative error to be caught by the API route
+    throw new Error(`AI analysis failed. Please check server logs. Original error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -40,69 +122,53 @@ export async function POST(request: NextRequest) {
       console.warn('Missing or invalid NEXT_PUBLIC_GEMINI_API_KEY, using fallback explanation');
       
       const fallbackExplanation = `
-# ${airdrop?.title || 'Airdrop'} Analysis 🚀
+# ${airdrop?.title || 'Airdrop'} Analysis
 
-## What is this Airdrop? 🚀
-This is an exciting airdrop opportunity in the Web3 ecosystem! Airdrops are a way for blockchain projects to distribute tokens to their community members as a reward for participation, loyalty, or early adoption. This particular airdrop represents a significant opportunity to be part of a growing decentralized ecosystem.
+## Overview
+This airdrop represents a strategic token distribution initiative designed to reward community members and early adopters. Airdrops serve as a fundamental mechanism for decentralized projects to build engaged communities while distributing governance and utility tokens to stakeholders.
 
-## Key Benefits & Rewards 💰
+## Token Distribution
 Participants in this airdrop can expect to receive:
-- **Token Rewards**: Valuable tokens that may appreciate in value over time
-- **Community Access**: Entry into exclusive communities and governance participation
-- **Early Adoption Benefits**: Being among the first to hold these tokens
-- **Future Utility**: Tokens that may unlock additional features or services
-- **Network Effects**: Potential benefits as the ecosystem grows
+- Token Allocation: Direct distribution of project tokens
+- Governance Rights: Voting power in project decisions and protocol upgrades
+- Utility Access: Early access to platform features and services
+- Community Benefits: Participation in exclusive ecosystem programs
 
-## Eligibility Checklist ✅
-To ensure you're eligible for this airdrop, verify that you meet these criteria:
-- **${airdrop?.eligibility || 'Check project requirements'}**
+## Eligibility Requirements
+To qualify for this airdrop, participants must meet the following criteria:
+- ${airdrop?.eligibility || 'Meet project-specific requirements'}
 - Active participation in the ecosystem before the snapshot date
-- Proper wallet setup and security measures
-- Compliance with any geographic restrictions
-- Meeting minimum holding periods or activity requirements
+- Compliance with geographic and regulatory requirements
+- Proper wallet configuration and security measures
 
-## How to Claim 📝
-Follow these steps to claim your airdrop rewards:
-1. **Verify Eligibility**: Double-check that you meet all requirements
-2. **Prepare Your Wallet**: Ensure your wallet is secure and accessible
-3. **Wait for Announcement**: Monitor official channels for claim opening
-4. **Connect Wallet**: Use the official claiming interface
-5. **Complete Verification**: Follow any KYC or verification steps required
-6. **Claim Tokens**: Execute the claiming transaction
-7. **Secure Storage**: Move tokens to a secure wallet after claiming
+## Participation Process
+Follow these steps to claim your airdrop allocation:
+1. Verify Eligibility: Confirm you meet all stated requirements
+2. Prepare Wallet: Ensure your wallet is secure and accessible
+3. Monitor Announcements: Stay updated through official channels
+4. Complete Claim Process: Follow the official claiming interface
+5. Secure Tokens: Transfer tokens to secure storage after claiming
 
-## Important Dates & Timelines 📅
-- **Snapshot Date**: ${airdrop?.snapshot || 'TBA'} - This is when eligibility is determined
-- **Claim Period**: Usually opens shortly after snapshot announcement
-- **Distribution**: Tokens are typically distributed within days or weeks
-- **Deadline**: Most airdrops have a claiming deadline - don't miss it!
+## Timeline & Important Dates
+- Snapshot Date: ${airdrop?.snapshot || 'To be announced'} - Eligibility determination
+- Claim Period: Opens shortly after snapshot announcement
+- Distribution: Tokens typically distributed within days of claiming
+- Deadline: Most airdrops have specific claiming deadlines
 
-/* security guidance intentionally removed by project owner */
+## Market Analysis
+This airdrop is part of a broader trend toward community-driven token distribution:
+- Ecosystem Growth: Supporting decentralized platform development
+- Community Building: Fostering engaged user participation
+- Innovation Focus: Advancing cutting-edge Web3 technologies
+- Strategic Partnerships: Building alliances with industry leaders
 
-## Market Context & Future Potential 📈
-This airdrop is part of a broader trend in Web3 where projects reward their communities:
-- **Growing Ecosystem**: The project is building a comprehensive decentralized platform
-- **Strong Team**: Experienced developers and advisors behind the project
-- **Community Focus**: Emphasis on user engagement and community building
-- **Innovation**: Cutting-edge technology and unique value propositions
-- **Partnerships**: Strategic alliances with other major projects
+## Key Considerations
+- Opportunity: Significant token allocation with governance rights
+- Requirements: ${airdrop?.eligibility || 'Project-specific criteria'}
+- Timeline: Snapshot scheduled for ${airdrop?.snapshot || 'TBA'}
+- Action Required: Verify eligibility and prepare for claiming process
 
-## Tips for Newcomers 🧭
-If you're new to airdrops and Web3, here's how to get started:
-- **Learn the Basics**: Understand wallets, blockchain, and DeFi fundamentals
-- **Start Small**: Begin with smaller amounts to learn the process
-- **Join Communities**: Participate in project Discord, Telegram, or forums
-- **Follow Updates**: Stay informed through official channels
- 
-- **Be Patient**: Airdrops often have long timelines and require patience
-
-## Quick Summary ⚡
-- **Opportunity**: Significant airdrop with valuable token rewards
-- **Requirements**: ${airdrop?.eligibility || 'Check project requirements'}
-- **Timeline**: Snapshot on ${airdrop?.snapshot || 'TBA'}
-- **Action**: Verify eligibility and prepare for claiming process
-
- *Note: This is a comprehensive guide.*
+*This analysis provides general guidance. Always conduct your own research and verify information through official channels.*
 `;
 
       return NextResponse.json({
@@ -136,44 +202,9 @@ If you're new to airdrops and Web3, here's how to get started:
     }
 
     console.log('Generating AI explanation...');
-    
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-    
-    const prompt = `
-You are an expert Web3 Airdrop Analyst. Write a comprehensive, engaging, and highly informative analysis of the following airdrop. Your response should be well-structured with clear headings, bullet points, and a friendly, enthusiastic tone.
 
-MANDATE: Conclude every response with a "Quick Summary" section consisting of 2-3 concise bullet points that state the most important actions or takeaways for the user.
-
-Airdrop Details:
-- Title: ${airdrop.title}
-- Snapshot Date: ${airdrop.snapshot}
-- Eligibility Criteria: ${airdrop.eligibility}
-
-Please cover the following topics in your analysis:
-1. **What is this Airdrop?** 🚀 Explain the project behind the airdrop and why it's a significant opportunity in the Web3 space.
-2. **Key Benefits & Rewards** 💰 Detail what users can expect to receive and the potential value or utility of these rewards.
-3. **Eligibility Checklist** ✅ Provide a clear, step-by-step guide on how users can confirm their eligibility.
-4. **How to Claim** 📝 Outline the exact process for claiming the airdrop, including any necessary actions or platforms.
-5. **Important Dates & Timelines** 📅 Highlight critical dates like snapshot, claim period, and distribution.
-6. **Market Context & Future Potential** 📈 Briefly discuss the project's position in the market and its long-term outlook.
-8. **Tips for Newcomers** 🧭 Provide friendly advice for users new to airdrops or the Web3 space.
-9. **Quick Summary** ⚡ Conclude with a brief, impactful summary of the airdrop's main points.
-
-Your response should be:
-- Long and detailed (aim for 800-1200 words)
-- Well-structured with clear headings and bullet points
-- Friendly and enthusiastic tone
-- Include 3-5 relevant emojis naturally throughout
-- Use markdown formatting for better readability
-- Provide actionable advice and insights
-- Be informative but accessible to both beginners and experienced users
-
-Make it engaging and comprehensive - this should be the go-to resource for understanding this airdrop!
-`;
-
-    console.log('Calling Gemini API...');
-    const result = await generateAnalysisWithTimeout(airdrop);
-    const explanation = result;
+    // Directly call the AI analysis function
+    const explanation = await analyzeAirdrop(airdrop);
     
     console.log('AI explanation generated successfully');
 
@@ -203,70 +234,53 @@ Make it engaging and comprehensive - this should be the go-to resource for under
     
     // Provide a fallback explanation if AI fails
     const fallbackExplanation = `
-# ${airdropData?.title || 'Airdrop'} Analysis 🚀
+ ${airdropData?.title || 'Airdrop'} Analysis
 
-## What is this Airdrop? 🚀
-This is an exciting airdrop opportunity in the Web3 ecosystem! Airdrops are a way for blockchain projects to distribute tokens to their community members as a reward for participation, loyalty, or early adoption. This particular airdrop represents a significant opportunity to be part of a growing decentralized ecosystem.
+## Overview
+This airdrop represents a strategic token distribution initiative designed to reward community members and early adopters. Airdrops serve as a fundamental mechanism for decentralized projects to build engaged communities while distributing governance and utility tokens to stakeholders.
 
-## Key Benefits & Rewards 💰
+## Token Distribution
 Participants in this airdrop can expect to receive:
-- **Token Rewards**: Valuable tokens that may appreciate in value over time
-- **Community Access**: Entry into exclusive communities and governance participation
-- **Early Adoption Benefits**: Being among the first to hold these tokens
-- **Future Utility**: Tokens that may unlock additional features or services
-- **Network Effects**: Potential benefits as the ecosystem grows
+- Token Allocation: Direct distribution of project tokens
+- governance Rights: Voting power in project decisions and protocol upgrades
+- Utility Access: Early access to platform features and services
+- Community Benefits: Participation in exclusive ecosystem programs
 
-## Eligibility Checklist ✅
-To ensure you're eligible for this airdrop, verify that you meet these criteria:
-- **${airdropData?.eligibility || 'Check project requirements'}**
+## Eligibility Requirements
+To qualify for this airdrop, participants must meet the following criteria:
+- ${airdropData?.eligibility || 'Meet project-specific requirements'}
 - Active participation in the ecosystem before the snapshot date
-- Proper wallet setup and security measures
-- Compliance with any geographic restrictions
-- Meeting minimum holding periods or activity requirements
+- Compliance with geographic and regulatory requirements
+- Proper wallet configuration and security measures
 
-## How to Claim 📝
-Follow these steps to claim your airdrop rewards:
-1. **Verify Eligibility**: Double-check that you meet all requirements
-2. **Prepare Your Wallet**: Ensure your wallet is secure and accessible
-3. **Wait for Announcement**: Monitor official channels for claim opening
-4. **Connect Wallet**: Use the official claiming interface
-5. **Complete Verification**: Follow any KYC or verification steps required
-6. **Claim Tokens**: Execute the claiming transaction
-7. **Secure Storage**: Move tokens to a secure wallet after claiming
+## Participation Process
+Follow these steps to claim your airdrop allocation:
+1. Verify Eligibility: Confirm you meet all stated requirements
+2. Prepare Wallet: Ensure your wallet is secure and accessible
+3. Monitor Announcements: Stay updated through official channels
+4. Complete Claim Process: Follow the official claiming interface
+5. Secure Tokens: Transfer tokens to secure storage after claiming
 
-## Important Dates & Timelines 📅
-- **Snapshot Date**: ${airdropData?.snapshot || 'TBA'} - This is when eligibility is determined
-- **Claim Period**: Usually opens shortly after snapshot announcement
-- **Distribution**: Tokens are typically distributed within days or weeks
-- **Deadline**: Most airdrops have a claiming deadline - don't miss it!
+## Timeline & Important Dates
+- Snapshot Date: ${airdropData?.snapshot || 'To be announced'} - Eligibility determination
+- Claim Period: Opens shortly after snapshot announcement
+- Distribution: Tokens typically distributed within days of claiming
+- Deadline: Most airdrops have specific claiming deadlines
 
-/* security guidance intentionally removed by project owner */
+## Market Analysis
+This airdrop is part of a broader trend toward community-driven token distribution:
+- Ecosystem Growth: Supporting decentralized platform development
+- Community Building: Fostering engaged user participation
+- Innovation Focus: Advancing cutting-edge Web3 technologies
+- Strategic Partnerships: Building alliances with industry leaders
 
-## Market Context & Future Potential 📈
-This airdrop is part of a broader trend in Web3 where projects reward their communities:
-- **Growing Ecosystem**: The project is building a comprehensive decentralized platform
-- **Strong Team**: Experienced developers and advisors behind the project
-- **Community Focus**: Emphasis on user engagement and community building
-- **Innovation**: Cutting-edge technology and unique value propositions
-- **Partnerships**: Strategic alliances with other major projects
+## Key Considerations
+- Opportunity: Significant token allocation with governance rights
+- Requirements: ${airdropData?.eligibility || 'Project-specific criteria'}
+- Timeline: Snapshot scheduled for ${airdropData?.snapshot || 'TBA'}
+- Action Required: Verify eligibility and prepare for claiming process
 
-## Tips for Newcomers 🧭
-If you're new to airdrops and Web3, here's how to get started:
-- **Learn the Basics**: Understand wallets, blockchain, and DeFi fundamentals
-- **Start Small**: Begin with smaller amounts to learn the process
-- **Join Communities**: Participate in project Discord, Telegram, or forums
-- **Follow Updates**: Stay informed through official channels
- 
-- **Be Patient**: Airdrops often have long timelines and require patience
-
-## Quick Summary ⚡
-- **Opportunity**: Significant airdrop with valuable token rewards
-- **Requirements**: ${airdropData?.eligibility || 'Check project requirements'}
-- **Timeline**: Snapshot on ${airdropData?.snapshot || 'TBA'}
-- **Action**: Verify eligibility and prepare for claiming process
-- **Security**: Always use official sources and protect your assets
-
- *Note: This is a comprehensive guide. Analysis temporarily unavailable.*
+*This analysis provides general guidance. Always conduct your own research and verify information through official channels.*
 `;
 
     return NextResponse.json({

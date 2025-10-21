@@ -2,23 +2,131 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AirdropDetails } from '@/lib/gemini';
+import { AirdropDetails } from '@/lib/types';
 import { X, Calendar, CheckCircle, BrainCircuit, AlertTriangle, Info } from 'lucide-react';
 
-// Helper function to format the analysis content
+// Helper function to format the analysis content with modern styling
 const formatAnalysis = (text: string) => {
-  let html = text
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em class="italic text-gray-300">$1</em>')
-    .replace(/`([^`]+)`/g, '<code class="bg-gray-700 text-sm rounded px-1.5 py-1 font-mono">$1</code>')
-    .replace(/(\d+\.\s)/g, '<br /><br />$1');
-  
-  // Add custom styling for lists
-  html = html.replace(/<br \/><br \/>(\d+\.\s.*?)((?=<br \/><br \/>\d+\.\s)|$)/gs, (match, item) => {
-    return `<div class="flex items-start mt-3">${item.replace(/(\d+\.)/, '<span class="text-blue-400 font-semibold mr-3">$1</span>')}</div>`;
+  // Convert markdown to modern HTML with emojis and colors
+  const lines = text.split('\n');
+  const formattedLines = lines.map((line, index) => {
+    const trimmed = line.trim();
+    
+    // Handle headers with emojis and colors
+    if (trimmed.startsWith('## ')) {
+      const title = trimmed.slice(3);
+      let emoji = '📋';
+      let colorClass = 'text-blue-400';
+      
+      // Add specific emojis and colors for different sections
+      if (title.toLowerCase().includes('overview')) {
+        emoji = '🚀';
+        colorClass = 'text-blue-400';
+      } else if (title.toLowerCase().includes('token') || title.toLowerCase().includes('distribution')) {
+        emoji = '💰';
+        colorClass = 'text-green-400';
+      } else if (title.toLowerCase().includes('eligibility') || title.toLowerCase().includes('requirement')) {
+        emoji = '✅';
+        colorClass = 'text-green-400';
+      } else if (title.toLowerCase().includes('participate') || title.toLowerCase().includes('claim')) {
+        emoji = '🎯';
+        colorClass = 'text-purple-400';
+      } else if (title.toLowerCase().includes('timeline') || title.toLowerCase().includes('date')) {
+        emoji = '📅';
+        colorClass = 'text-orange-400';
+      } else if (title.toLowerCase().includes('market') || title.toLowerCase().includes('analysis')) {
+        emoji = '📈';
+        colorClass = 'text-cyan-400';
+      } else if (title.toLowerCase().includes('takeaway') || title.toLowerCase().includes('summary')) {
+        emoji = '⚡';
+        colorClass = 'text-yellow-400';
+      }
+      
+      return (
+        <h2 key={index} className={`text-xl font-bold ${colorClass} mt-8 mb-4 flex items-center gap-2`}>
+          <span>{emoji}</span>
+          <span>{title}</span>
+        </h2>
+      );
+    }
+    
+    // Handle subheaders
+    if (trimmed.startsWith('### ')) {
+      return (
+        <h3 key={index} className="text-lg font-semibold text-white mt-6 mb-3 flex items-center gap-2">
+          <span>🔹</span>
+          <span>{trimmed.slice(4)}</span>
+        </h3>
+      );
+    }
+    
+    // Handle bullet points with emojis
+    if (trimmed.startsWith('- ')) {
+      const content = trimmed.slice(2);
+      let emoji = '•';
+      
+      // Add relevant emojis based on content
+      if (content.toLowerCase().includes('token')) emoji = '🪙';
+      else if (content.toLowerCase().includes('governance')) emoji = '🗳️';
+      else if (content.toLowerCase().includes('utility')) emoji = '⚙️';
+      else if (content.toLowerCase().includes('community')) emoji = '👥';
+      else if (content.toLowerCase().includes('wallet')) emoji = '👛';
+      else if (content.toLowerCase().includes('security')) emoji = '🔒';
+      else if (content.toLowerCase().includes('network')) emoji = '🌐';
+      else if (content.toLowerCase().includes('fee')) emoji = '⛽';
+      
+      return (
+        <div key={index} className="ml-6 mb-3 text-gray-300 flex items-start gap-2">
+          <span className="text-blue-400 mt-1">{emoji}</span>
+          <span className="leading-relaxed">{content}</span>
+        </div>
+      );
+    }
+    
+    // Handle numbered lists with emojis
+    if (/^\d+\. /.test(trimmed)) {
+      const match = trimmed.match(/^(\d+)\. (.*)/);
+      if (match) {
+        const number = match[1];
+        const content = match[2];
+        let emoji = '🔢';
+        
+        // Add step emojis for numbered lists
+        if (content.toLowerCase().includes('verify') || content.toLowerCase().includes('check')) emoji = '🔍';
+        else if (content.toLowerCase().includes('prepare') || content.toLowerCase().includes('setup')) emoji = '⚙️';
+        else if (content.toLowerCase().includes('connect') || content.toLowerCase().includes('link')) emoji = '🔗';
+        else if (content.toLowerCase().includes('claim') || content.toLowerCase().includes('execute')) emoji = '⚡';
+        else if (content.toLowerCase().includes('secure') || content.toLowerCase().includes('store')) emoji = '🔐';
+        
+        return (
+          <div key={index} className="ml-6 mb-3 text-gray-300 flex items-start gap-2">
+            <span className="text-purple-400 mt-1">{emoji}</span>
+            <span className="leading-relaxed">
+              <span className="font-semibold text-purple-400">{number}.</span> {content}
+            </span>
+          </div>
+        );
+      }
+    }
+    
+    // Handle empty lines
+    if (trimmed === '') {
+      return <div key={index} className="mb-4"></div>;
+    }
+    
+    // Handle regular paragraphs with better spacing
+    return (
+      <p key={index} className="mb-4 text-gray-300 leading-relaxed text-base">
+        {trimmed}
+      </p>
+    );
   });
-
-  return <div className="text-gray-300 space-y-2" dangerouslySetInnerHTML={{ __html: html }} />;
+  
+  return (
+    <div className="space-y-1">
+      {formattedLines}
+    </div>
+  );
 };
 
 
@@ -89,62 +197,57 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 50 }}
+            initial={{ scale: 0.95, opacity: 0, y: 30 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 50 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 180 }}
-            className="relative w-full max-w-4xl h-[90vh] bg-gray-900/50 border border-gray-700 rounded-2xl shadow-2xl shadow-blue-500/10 flex flex-col overflow-hidden"
+            exit={{ scale: 0.95, opacity: 0, y: 30 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 150 }}
+            className="relative w-full max-w-3xl h-auto max-h-[85vh] bg-gray-900 border border-gray-700/50 rounded-xl shadow-lg flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <header className="flex items-center justify-between p-5 border-b border-gray-800 flex-shrink-0">
-              <div className="flex items-center space-x-4">
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1, rotate: 360 }}
-                  transition={{ delay: 0.2, type: 'spring' }}
-                  className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center"
-                >
-                  <BrainCircuit className="text-white" />
-                </motion.div>
+            <header className="flex items-center justify-between p-4 border-b border-gray-800 flex-shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center border border-blue-500/30">
+                  <BrainCircuit className="text-blue-400" size={20} />
+                </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">{airdrop.title}</h2>
-                  <p className="text-sm text-gray-400">Airdrop Details</p>
+                  <h2 className="text-lg font-semibold text-gray-100">{airdrop.title}</h2>
+                  <p className="text-xs text-gray-400">Professional Analysis</p>
                 </div>
               </div>
               <motion.button
-                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileHover={{ scale: 1.1, backgroundColor: '#374151' }}
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
-                className="p-2 rounded-full text-gray-400 hover:bg-gray-800"
+                className="p-2 rounded-full text-gray-400 hover:text-white transition-colors"
               >
-                <X size={24} />
+                <X size={20} />
               </motion.button>
             </header>
 
             {/* Content */}
-            <main className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column: Details */}
-              <div className="flex flex-col space-y-6">
-                <InfoCard icon={<Calendar />} title="Snapshot Date" content={airdrop.snapshot} />
-                <InfoCard icon={<CheckCircle />} title="Eligibility" content={airdrop.eligibility} />
+            <main className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-gray-600">
+              {/* Details Section - now vertical */}
+              <div className="flex flex-col space-y-4">
+                <InfoCard icon={<Calendar size={18} />} title="Snapshot Date" content={airdrop.snapshot} />
+                <InfoCard icon={<CheckCircle size={18} />} title="Eligibility" content={airdrop.eligibility} />
               </div>
 
-              {/* Right Column: AI Analysis */}
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5 flex flex-col">
-                <h3 className="font-semibold text-white text-lg mb-4 flex items-center">
-                  <BrainCircuit className="mr-3 text-blue-400" />
-                  Analysis
+              {/* AI Analysis Section */}
+              <div className="bg-gray-800/40 border border-gray-700/50 rounded-lg p-5">
+                <h3 className="font-medium text-gray-200 text-base mb-3 flex items-center">
+                  <BrainCircuit className="mr-2.5 text-blue-500" size={18} />
+                  Analysis Report
                 </h3>
                 
                 {isLoading && <LoadingState />}
                 {error && <ErrorState message={error} onRetry={fetchAnalysis} />}
                 {!isLoading && !error && analysis && (
-                  <div className="prose prose-invert max-w-none text-gray-300">
+                  <div className="text-gray-300 leading-relaxed">
                     {formatAnalysis(analysis)}
                   </div>
                 )}
@@ -152,8 +255,8 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
             </main>
 
             {/* Footer */}
-            <footer className="p-4 border-t border-gray-800 text-center text-xs text-gray-500">
-              Powered by <span className="font-semibold text-blue-400">Alex</span>. Analysis is AI-generated and may contain inaccuracies.
+            <footer className="p-3 border-t border-gray-800 text-center text-xs text-gray-500">
+              Analysis provided for informational purposes. Always conduct your own research (DYOR).
             </footer>
           </motion.div>
         </motion.div>
@@ -162,41 +265,37 @@ const AirdropDetailsPopup: React.FC<AirdropDetailsPopupProps> = ({ isOpen, onClo
   );
 };
 
-const InfoCard = ({ icon, title, content }: { icon: React.ReactElement<{ className?: string }>, title: string, content: string }) => (
-  <motion.div 
-    initial={{ opacity: 0, x: -20 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ delay: 0.3 }}
-    className="bg-gray-800/50 border border-gray-700 p-4 rounded-lg"
-  >
-    <div className="flex items-center text-gray-400 mb-2">
-      {React.cloneElement(icon, { className: `mr-2 ${icon.props.className || ''}` })}
-      <h3 className="font-semibold text-sm">{title}</h3>
+const InfoCard = ({ icon, title, content }: { icon: React.ReactNode, title: string, content: string }) => (
+  <div className="bg-gray-800/60 p-4 rounded-lg border border-gray-700/60">
+    <div className="flex items-center text-gray-400 mb-1.5">
+      <div className="mr-2 text-gray-500">
+        {icon}
+      </div>
+      <h3 className="font-medium text-xs uppercase tracking-wider">{title}</h3>
     </div>
-    <p className="text-white font-medium">{content}</p>
-  </motion.div>
+    <p className="text-gray-100 font-semibold text-sm">{content}</p>
+  </div>
 );
 
 const LoadingState = () => (
-  <div className="flex flex-col items-center justify-center h-full text-center">
+  <div className="flex items-center justify-center py-10">
     <motion.div 
       animate={{ rotate: 360 }} 
       transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-      className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mb-4"
+      className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mr-3"
     />
-    <p className="text-gray-300">Alex is analyzing the airdrop...</p>
-    <p className="text-xs text-gray-500 mt-1">This may take a moment.</p>
+    <p className="text-sm text-gray-400">Generating analysis...</p>
   </div>
 );
 
 const ErrorState = ({ message, onRetry }: { message: string, onRetry: () => void }) => (
-  <div className="bg-red-900/50 border border-red-700 text-red-300 p-4 rounded-lg text-center">
-    <AlertTriangle className="mx-auto mb-2" />
-    <p className="font-semibold mb-2">Analysis Failed</p>
-    <p className="text-sm mb-4">{message}</p>
+  <div className="bg-red-900/30 border border-red-700/50 text-red-300 p-4 rounded-lg text-center">
+    <AlertTriangle className="mx-auto mb-2" size={24} />
+    <p className="font-semibold mb-1">Analysis Failed</p>
+    <p className="text-xs mb-3">{message}</p>
     <button
       onClick={onRetry}
-      className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+      className="bg-red-600/80 hover:bg-red-600 text-white font-bold py-1.5 px-4 rounded-md text-sm transition-colors"
     >
       Try Again
     </button>

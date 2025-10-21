@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { chatWithAIStream, ChatMessage } from '@/lib/gemini';
+import { ChatMessage } from '@/lib/types';
 import MobileKeyboard from './MobileKeyboard';
 
 interface AIChatProps {
@@ -153,14 +153,30 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose }) => {
     try {
       const history: ChatMessage[] = [...messages, userMessage];
       let accum = '';
-      await chatWithAIStream(
-        history,
-        (delta) => {
+      
+      // Call the chat API directly
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history }),
+        signal: abortRef.current.signal,
+      });
+      
+      if (!res.ok || !res.body) {
+        throw new Error(`Chat stream failed (${res.status})`);
+      }
+      
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const delta = decoder.decode(value);
           accum += delta;
           setStreamingAssistant(prev => prev + delta);
-        },
-        abortRef.current.signal
-      );
+      }
+      
       const finalText = accum.trim();
       if (finalText) {
         setMessages(prev => [...prev, { role: 'assistant', content: finalText }]);
