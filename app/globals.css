@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 @import '@fontsource/inter/400.css';
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
@@ -12,7 +10,11 @@
   --foreground: #f1f5f9;
 }
 
-/* Theme variables handled via :root and .light/.dark classes */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
 
 .light {
   --background: #f9fafb;
@@ -146,15 +148,9 @@ html, body {
   line-height: 0.75rem;
 }
 
-/* Focus styles: explicit rules instead of @apply to avoid PostCSS parse issues */
-.focus-ring:focus {
-  outline: none;
-  /* Approximate Tailwind's ring using box-shadow */
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
-}
-.dark .focus-ring:focus {
-  /* Slightly darker offset for dark mode */
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18);
+/* Focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
 }
 
 /* Selection styles */
