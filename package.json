@@ -27,6 +27,8 @@
     "turbopack": "^0.0.1",
     "viem": "^2.38.3",
     "wagmi": "^2.18.1"
+    ,
+    "ethers": "^6.10.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.14",

